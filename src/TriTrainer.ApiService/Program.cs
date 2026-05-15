@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 using TriTrainer.ApiService.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 
 builder.AddNpgsqlDbContext<ActivitiesDbContext>("tritrainerdb");
 
