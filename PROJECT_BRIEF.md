@@ -90,8 +90,8 @@ Key product pillars:
 |--------|------|--------|-------|
 | 0 | PoC Baseline | Done | Existing calendar + activity CRUD proof of concept |
 | 1 | Foundation Reboot | Done | Product reframing, architecture updates, redesigned UX baseline, domain and contract expansion, QA sign-off |
-| 2 | Plan and Goals Core | In Progress | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
-| 3 | Progress and PR Tracking | Planned | Personal records, progress analytics, compliance dashboards |
+| 2 | Plan and Goals Core | Done | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
+| 3 | Progress and PR Tracking | Planned | Personal records, progress analytics, compliance dashboards, CI pipeline, Playwright smoke execution |
 
 ## 8. Current State (rewrite every sprint)
 
@@ -99,21 +99,22 @@ Key product pillars:
 - Aspire AppHost can orchestrate web, api, and postgres locally.
 - API supports activity CRUD for monthly calendar display.
 - API now exposes Sprint 1 `/v1` contracts for athlete profile, goals, plans, weekly progress, and personal records.
-- Blazor frontend now uses dashboard-first navigation with dedicated Goals, Plans, Weekly Progress, and Records pages.
+- Blazor frontend uses dashboard-first navigation with dedicated Goals, Plans, Weekly Progress, and Records pages.
 - Existing activities flow remains available under `/calendar` as a support workflow.
-- API tests include planning-domain coverage and coexistence checks with legacy activities.
+- Sprint 2 complete: deterministic plan generation templates (EventFinish, Consistency, DisciplinePerformance), status-transition guards for goals and plans, terminal-goal rejection on plan creation, and string-enum JSON deserialization fix restoring Sprint 1 activity CRUD.
+- Plans and Weekly Progress pages include session pills, status badges, Activate button, variance column, compliance colouring, and zero-row filtering.
+- 196 tests passing (137 API, 5 integration, 27 web, 27 service-defaults); 0 failed, 0 skipped.
+- Playwright smoke suite implemented (19 tests); execution deferred to Sprint 3 CI pipeline (formal waiver 2026-05-15).
 
 **What does not work yet:**
-- No adaptive recommendation engine or automated plan optimization yet.
-- Session auto-generation logic is minimal and needs richer training templates.
-- End-to-end UI automation for new flows is not yet in place.
-- Security model and auth strategy are not implemented.
+- End-to-end UI automation not yet executed (Playwright suite compiled; needs CI/Docker runtime).
+- No adaptive recommendation engine or automated plan optimization.
+- Security model and auth strategy not implemented.
 
 **What is next:**
-- Introduce richer auto-generation rules for planned sessions (discipline templates and per-week defaults).
-- Harden plan/goal status validation rules and error semantics across `/v1` contracts.
-- Add Playwright smoke coverage for Dashboard -> Goals -> Plans -> Progress -> Records flow.
-- Add Sprint 2 migration and regression checks to preserve legacy activities behavior.
+- Sprint 3 — Progress and PR Tracking: personal records, progress analytics, compliance dashboards.
+- Stand up CI pipeline (GitHub Actions build + test + artifact publish) and execute Playwright smoke suite as first Sprint 3 task.
+- Address carried-forward minor issues: TUnit version skew (#2) and `TUnit0015` warnings (#3).
 
 ## 9. Security Rules
 

@@ -122,6 +122,16 @@ public class QaAdditionalCoverageTests
         await Assert.That(isRejected).IsFalse();
     }
 
+    [Test]
+    [Arguments(GoalStatus.Achieved)]
+    [Arguments(GoalStatus.Archived)]
+    public async Task PlanCreation_TerminalGoalStatuses_AreRejected(GoalStatus goalStatus)
+    {
+        var isRejected = goalStatus is GoalStatus.Achieved or GoalStatus.Archived;
+
+        await Assert.That(isRejected).IsTrue();
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 2 — Self-transition rejection (goal and plan)
     // The transition switch is exhaustive: any pair not listed returns false.

@@ -11,6 +11,7 @@ builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
 builder.AddNpgsqlDbContext<ActivitiesDbContext>("tritrainerdb");
@@ -294,6 +295,11 @@ v1.MapPost("/plans", async (CreatePlanRequest request, ActivitiesDbContext db) =
     if (goal is null)
     {
         return Results.NotFound("Goal not found.");
+    }
+
+    if (goal.Status is GoalStatus.Achieved or GoalStatus.Archived)
+    {
+        return Results.Conflict("Cannot create a plan for a goal that is already achieved or archived.");
     }
 
     var endDate = request.StartDate.AddDays((request.WeekCount * 7) - 1);
