@@ -20,23 +20,24 @@
                 <option value="">Select goal</option>
                 @foreach (var goal in goals)
                 {
-                    <option value="@goal.Id">@goal.GoalType - @goal.TargetDate.ToString("yyyy-MM-dd") (@goal.Status)</option>
+                    <option value="@goal.Id">@goal.GoalType – @goal.TargetDate.ToString("yyyy-MM-dd") (@goal.Status)</option>
                 }
             </select>
         </div>
         <div class="col-md-4">
             <label class="form-label">Name</label>
-            <input class="form-control" @bind="planName" />
+            <input class="form-control" @bind="planName" placeholder="e.g. Base Build Block" />
         </div>
         <div class="col-md-3">
             <label class="form-label">Start Date</label>
             <input class="form-control" type="date" @bind="startDate" />
         </div>
         <div class="col-md-2">
-            <label class="form-label">Weeks</label>
+            <label class="form-label">Weeks (4–16)</label>
             <input class="form-control" type="number" min="4" max="16" @bind="weekCount" />
         </div>
     </div>
+    <p class="text-muted small mt-2 mb-0">Sessions are auto-generated from your goal type and weekly hours.</p>
     <button class="btn btn-primary mt-3" @onclick="CreatePlan">Create Plan</button>
 </section>
 
@@ -67,12 +68,18 @@
                     @foreach (var plan in plans)
                     {
                         <tr>
-                            <td>@plan.Name</td>
-                            <td>@plan.Status</td>
-                            <td>@plan.StartDate.ToString("yyyy-MM-dd") to @plan.EndDate.ToString("yyyy-MM-dd")</td>
+                            <td><strong>@plan.Name</strong></td>
+                            <td><span class="tt-plan-status tt-plan-@plan.Status.ToString().ToLower()">@plan.Status</span></td>
+                            <td class="text-muted small">@plan.StartDate.ToString("yyyy-MM-dd") → @plan.EndDate.ToString("yyyy-MM-dd")</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => LoadPlan(plan.Id)">Details</button>
-                                <a class="btn btn-sm btn-outline-primary" href="@($"progress?planId={plan.Id}&weekStart={plan.StartDate:yyyy-MM-dd}")">Progress</a>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-secondary" @onclick="() => LoadPlan(plan.Id)">Details</button>
+                                    <a class="btn btn-outline-primary" href="@($"progress?planId={plan.Id}&weekStart={plan.StartDate:yyyy-MM-dd}")">Progress</a>
+                                    @if (plan.Status == PlanStatus.Draft)
+                                    {
+                                        <button class="btn btn-outline-success" @onclick="() => ActivatePlan(plan.Id)">Activate</button>
+                                    }
+                                </div>
                             </td>
                         </tr>
                     }
@@ -85,18 +92,44 @@
 @if (selectedPlan is not null)
 {
     <section class="surface-card mt-4">
-        <h2>@selectedPlan.Name - Weeks</h2>
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <h2 class="mb-0">@selectedPlan.Name</h2>
+            <span class="tt-plan-status tt-plan-@selectedPlan.Status.ToString().ToLower()">@selectedPlan.Status</span>
+            <span class="text-muted small ms-auto">@selectedPlan.Weeks.Count weeks · @selectedPlan.Weeks.Sum(w => w.Sessions.Count) sessions · @selectedPlan.Weeks.Sum(w => w.Sessions.Sum(s => s.PlannedDurationMinutes)) min planned</span>
+        </div>
 
         @foreach (var week in selectedPlan.Weeks.OrderBy(w => w.WeekIndex))
         {
-            <div class="mb-2 p-2 border rounded bg-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <strong>Week @week.WeekIndex (@week.WeekStartDate.ToString("yyyy-MM-dd"))</strong>
-                    <a class="btn btn-sm btn-outline-primary" href="@($"progress?planId={selectedPlan.Id}&weekStart={week.WeekStartDate:yyyy-MM-dd}")">View Progress</a>
+            var weekTotalMin = week.Sessions.Sum(s => s.PlannedDurationMinutes);
+            <div class="mb-2 p-3 border rounded bg-white">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Week @week.WeekIndex <span class="text-muted fw-normal small">(@week.WeekStartDate.ToString("MMM d, yyyy"))</span></strong>
+                    <div class="d-flex align-items-center gap-3">
+                        @if (week.Sessions.Count > 0)
+                        {
+                            <span class="text-muted small">@week.Sessions.Count session@(week.Sessions.Count == 1 ? "" : "s") · @weekTotalMin min</span>
+                        }
+                        <a class="btn btn-sm btn-outline-primary" href="@($"progress?planId={selectedPlan.Id}&weekStart={week.WeekStartDate:yyyy-MM-dd}")">Progress</a>
+                    </div>
                 </div>
                 @if (week.Sessions.Count == 0)
                 {
-                    <p class="text-muted mb-0 mt-2">No planned sessions yet.</p>
+                    <p class="text-muted mb-0">No planned sessions.</p>
+                }
+                else
+                {
+                    <div class="tt-session-list">
+                        @foreach (var session in week.Sessions.OrderBy(s => s.DayOfWeek))
+                        {
+                            <div class="tt-session-pill">
+                                <span>@DisciplineIcon(session.Discipline)</span>
+                                <span class="tt-session-discipline">@session.Discipline</span>
+                                <span class="tt-session-type-badge tt-session-@session.SessionType.ToString().ToLower()">@session.SessionType</span>
+                                <span class="text-muted small">@session.DayOfWeek</span>
+                                <span class="tt-session-duration">@session.PlannedDurationMinutes min</span>
+                            </div>
+                        }
+                    </div>
                 }
             </div>
         }
@@ -152,11 +185,10 @@
             return;
         }
 
-        var parsedStartDate = DateOnly.FromDateTime(startDate.Date);
-
         try
         {
-            await ApiClient.CreatePlanAsync(new CreatePlanRequest(goalId, planName, parsedStartDate, weekCount));
+            await ApiClient.CreatePlanAsync(new CreatePlanRequest(goalId, planName, DateOnly.FromDateTime(startDate.Date), weekCount));
+            selectedPlan = null;
             await LoadDataAsync();
         }
         catch (Exception ex)
@@ -179,6 +211,21 @@
         }
     }
 
+    private async Task ActivatePlan(Guid id)
+    {
+        errorMessage = null;
+
+        try
+        {
+            await ApiClient.UpdatePlanStatusAsync(id, PlanStatus.Active);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to activate plan: {ex.Message}";
+        }
+    }
+
     private async Task EnsureProfileAsync()
     {
         var profile = await ApiClient.GetAthleteProfileAsync();
@@ -190,4 +237,13 @@
                 DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
         }
     }
+
+    private static string DisciplineIcon(ActivityType discipline) => discipline switch
+    {
+        ActivityType.Run   => "🏃",
+        ActivityType.Cycle => "🚴",
+        ActivityType.Swim  => "🏊",
+        _                  => "•"
+    };
 }
+

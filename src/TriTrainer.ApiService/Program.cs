@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using TriTrainer.ApiService.Data;
+using TriTrainer.ApiService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -181,6 +182,11 @@ v1.MapPost("/goals", async (CreateGoalRequest request, ActivitiesDbContext db) =
         return Results.BadRequest("Discipline is required for DisciplinePerformance goals.");
     }
 
+    if (request.GoalType == GoalType.DisciplinePerformance && (request.TargetValue is null or <= 0))
+    {
+        return Results.BadRequest("TargetValue is required and must be greater than 0 for DisciplinePerformance goals.");
+    }
+
     var conflictingGoal = await db.Goals.AnyAsync(g =>
         g.AthleteId == athlete.Id &&
         g.GoalType == request.GoalType &&
@@ -315,6 +321,14 @@ v1.MapPost("/plans", async (CreatePlanRequest request, ActivitiesDbContext db) =
         });
     }
 
+    // Generate discipline-specific sessions for every week using the athlete's available hours
+    var generatedSessions = PlanGenerationService.GenerateSessions(plan, goal, athlete);
+    foreach (var session in generatedSessions)
+    {
+        var targetWeek = plan.Weeks.First(w => w.Id == session.PlanWeekId);
+        targetWeek.Sessions.Add(session);
+    }
+
     db.TrainingPlans.Add(plan);
     await db.SaveChangesAsync();
 
@@ -326,7 +340,8 @@ v1.MapPost("/plans", async (CreatePlanRequest request, ActivitiesDbContext db) =
         plan.StartDate,
         plan.EndDate,
         plan.Status,
-        WeekCount = plan.Weeks.Count
+        WeekCount = plan.Weeks.Count,
+        SessionCount = plan.Weeks.Sum(w => w.Sessions.Count)
     });
 })
 .WithName("CreatePlan");
@@ -403,6 +418,41 @@ v1.MapGet("/plans", async (PlanStatus? status, ActivitiesDbContext db) =>
     return Results.Ok(plans);
 })
 .WithName("GetPlans");
+
+v1.MapPatch("/plans/{planId:guid}/status", async (Guid planId, UpdatePlanStatusRequest request, ActivitiesDbContext db) =>
+{
+    var plan = await db.TrainingPlans.FirstOrDefaultAsync(p => p.Id == planId);
+    if (plan is null)
+    {
+        return Results.NotFound();
+    }
+
+    var isValidTransition = (plan.Status, request.Status) switch
+    {
+        (PlanStatus.Draft,  PlanStatus.Active)    => true,
+        (PlanStatus.Active, PlanStatus.Completed) => true,
+        _ => false
+    };
+
+    if (!isValidTransition)
+    {
+        return Results.Conflict($"Cannot transition plan from {plan.Status} to {request.Status}.");
+    }
+
+    plan.Status = request.Status;
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new
+    {
+        plan.Id,
+        plan.GoalId,
+        plan.Name,
+        plan.StartDate,
+        plan.EndDate,
+        plan.Status
+    });
+})
+.WithName("UpdatePlanStatus");
 
 v1.MapGet("/progress/weekly", async (Guid planId, DateOnly weekStart, ActivitiesDbContext db) =>
 {
@@ -561,6 +611,7 @@ record UpsertAthleteProfileRequest(string DisplayName, decimal WeeklyHoursAvaila
 record CreateGoalRequest(GoalType GoalType, ActivityType? Discipline, decimal? TargetValue, DateOnly TargetDate);
 record UpdateGoalStatusRequest(GoalStatus Status);
 record CreatePlanRequest(Guid GoalId, string Name, DateOnly StartDate, int WeekCount);
+record UpdatePlanStatusRequest(PlanStatus Status);
 record CreatePersonalRecordRequest(ActivityType Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
 
 record AthleteProfileResponse(Guid Id, string DisplayName, decimal WeeklyHoursAvailable, DateOnly? PrimaryEventDate, DateTime CreatedAtUtc);

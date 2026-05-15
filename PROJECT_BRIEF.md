@@ -1,6 +1,6 @@
 # PROJECT_BRIEF.md - TriTrainer
 
-> Last updated: 2026-05-15 | Sprint 1 | Status: Complete
+> Last updated: 2026-05-15 | Sprint 2 | Status: In Progress
 
 ## 1. Project Overview
 
@@ -90,7 +90,7 @@ Key product pillars:
 |--------|------|--------|-------|
 | 0 | PoC Baseline | Done | Existing calendar + activity CRUD proof of concept |
 | 1 | Foundation Reboot | Done | Product reframing, architecture updates, redesigned UX baseline, domain and contract expansion, QA sign-off |
-| 2 | Plan and Goals Core | In Progress | Training plan and goals hardening, richer session generation, and UI workflow refinement |
+| 2 | Plan and Goals Core | In Progress | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
 | 3 | Progress and PR Tracking | Planned | Personal records, progress analytics, compliance dashboards |
 
 ## 8. Current State (rewrite every sprint)
@@ -110,10 +110,10 @@ Key product pillars:
 - Security model and auth strategy are not implemented.
 
 **What is next:**
-- Expand training-plan generation rules and add discipline-specific session scaffolds.
-- Harden API contracts with additional validation and integration tests.
-- Add Playwright E2E coverage for Dashboard -> Goals -> Plans -> Progress -> Records flow.
-- Begin auth and authorization design aligned with production security requirements.
+- Introduce richer auto-generation rules for planned sessions (discipline templates and per-week defaults).
+- Harden plan/goal status validation rules and error semantics across `/v1` contracts.
+- Add Playwright smoke coverage for Dashboard -> Goals -> Plans -> Progress -> Records flow.
+- Add Sprint 2 migration and regression checks to preserve legacy activities behavior.
 
 ## 9. Security Rules
 

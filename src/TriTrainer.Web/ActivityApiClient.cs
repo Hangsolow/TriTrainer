@@ -69,6 +69,8 @@ public record PlanDetail(Guid Id, Guid AthleteId, Guid? GoalId, string Name, Dat
 
 public record CreatePlanRequest(Guid GoalId, string Name, DateOnly StartDate, int WeekCount);
 
+public record UpdatePlanStatusRequest(PlanStatus Status);
+
 public record WeeklyProgressDiscipline(ActivityType Discipline, int PlannedMinutes, int CompletedMinutes, decimal CompliancePercent);
 
 public record WeeklyProgressTotals(int PlannedMinutes, int CompletedMinutes, decimal CompliancePercent);
@@ -177,6 +179,13 @@ public class ActivityApiClient(HttpClient httpClient)
     public async Task<PlanSummary?> CreatePlanAsync(CreatePlanRequest request, CancellationToken cancellationToken = default)
     {
         var response = await httpClient.PostAsJsonAsync("/v1/plans", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<PlanSummary>(cancellationToken);
+    }
+
+    public async Task<PlanSummary?> UpdatePlanStatusAsync(Guid planId, PlanStatus status, CancellationToken cancellationToken = default)
+    {
+        var response = await httpClient.PatchAsJsonAsync($"/v1/plans/{planId}/status", new UpdatePlanStatusRequest(status), cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<PlanSummary>(cancellationToken);
     }

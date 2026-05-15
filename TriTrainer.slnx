@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/tests/">
+    <Project Path="tests/TriTrainer.PlaywrightTests/TriTrainer.PlaywrightTests.csproj" />
+  </Folder>
   <Project Path="src/TriTrainer.ApiService/TriTrainer.ApiService.csproj" />
   <Project Path="src/TriTrainer.AppHost/TriTrainer.AppHost.csproj" />
   <Project Path="src/TriTrainer.ServiceDefaults/TriTrainer.ServiceDefaults.csproj" />

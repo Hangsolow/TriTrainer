@@ -14,3 +14,4 @@
 - Introduce read-model projections for dashboard performance.
 - Add event-driven audit trail for training plan changes.
 - Expand integration tests around cross-service startup health in Aspire.
+- Move from Blazor render mode Interactive Server to Interactive Auto (details: https://learn.microsoft.com/en-us/aspnet/core/blazor/components/render-modes?view=aspnetcore-10.0).
