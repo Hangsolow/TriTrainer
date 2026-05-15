@@ -98,3 +98,78 @@ h1:focus {
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 0.9rem;
 }
+
+/* ── Plan status badges ── */
+.tt-plan-status {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+.tt-plan-draft     { background: #f0f0f0; color: #555; }
+.tt-plan-active    { background: #d1fae5; color: #065f46; }
+.tt-plan-completed { background: #dff2f6; color: #086476; }
+
+/* ── Session pills in plan detail ── */
+.tt-session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.tt-session-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 8px;
+    background: var(--tt-surface-strong);
+    border: 1px solid var(--tt-border);
+    font-size: 0.875rem;
+}
+
+.tt-session-discipline {
+    font-weight: 500;
+    min-width: 3.2rem;
+}
+
+.tt-session-type-badge {
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 600;
+}
+.tt-session-endurance  { background: #dff2f6; color: #086476; }
+.tt-session-tempo      { background: #fff3cd; color: #856404; }
+.tt-session-intervals  { background: #ffe0e5; color: #9e1d2e; }
+.tt-session-recovery   { background: #d1fae5; color: #065f46; }
+
+.tt-session-duration {
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--tt-muted);
+    font-size: 0.85rem;
+}
+
+/* ── Weekly progress compliance ── */
+.tt-compliance-good { color: #065f46; font-weight: 700; }
+.tt-compliance-ok   { color: #856404; font-weight: 700; }
+.tt-compliance-low  { color: #9e1d2e; font-weight: 700; }
+
+.tt-variance-positive { color: #065f46; }
+.tt-variance-negative { color: #9e1d2e; }
+.tt-variance-neutral  { color: var(--tt-muted); }
+
+.tt-compliance-badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.tt-compliance-badge-good { background: #d1fae5; color: #065f46; }
+.tt-compliance-badge-ok   { background: #fff3cd; color: #856404; }
+.tt-compliance-badge-low  { background: #ffe0e5; color: #9e1d2e; }
+

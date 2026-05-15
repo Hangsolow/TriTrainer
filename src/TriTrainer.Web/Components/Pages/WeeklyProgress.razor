@@ -43,8 +43,19 @@ else if (progress is null)
 }
 else
 {
+    var activeDisciplines = progress.Disciplines
+        .Where(d => d.PlannedMinutes > 0 || d.CompletedMinutes > 0)
+        .ToList();
+    var totalVariance = progress.Totals.CompletedMinutes - progress.Totals.PlannedMinutes;
+
     <section class="surface-card">
-        <h2>Plan Week: @progress.WeekStartDate.ToString("yyyy-MM-dd")</h2>
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <h2 class="mb-0">Week of @progress.WeekStartDate.ToString("MMM d, yyyy")</h2>
+            <span class="tt-compliance-badge @ComplianceBadgeClass(progress.Totals.CompliancePercent)">
+                @progress.Totals.CompliancePercent% overall
+            </span>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-sm align-middle">
                 <thead>
@@ -52,26 +63,34 @@ else
                         <th>Discipline</th>
                         <th>Planned</th>
                         <th>Completed</th>
+                        <th>Variance</th>
                         <th>Compliance</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var row in progress.Disciplines)
+                    @foreach (var row in activeDisciplines)
                     {
+                        var variance = row.CompletedMinutes - row.PlannedMinutes;
                         <tr>
-                            <td>@row.Discipline</td>
+                            <td>@DisciplineIcon(row.Discipline) <strong>@row.Discipline</strong></td>
                             <td>@row.PlannedMinutes min</td>
                             <td>@row.CompletedMinutes min</td>
-                            <td>@row.CompliancePercent%</td>
+                            <td class="@VarianceClass(variance)">@FormatVariance(variance)</td>
+                            <td class="@ComplianceClass(row.CompliancePercent)">@row.CompliancePercent%</td>
                         </tr>
+                    }
+                    @if (activeDisciplines.Count == 0)
+                    {
+                        <tr><td colspan="5" class="text-muted">No planned or completed sessions this week.</td></tr>
                     }
                 </tbody>
                 <tfoot>
-                    <tr>
+                    <tr class="table-light">
                         <th>Total</th>
                         <th>@progress.Totals.PlannedMinutes min</th>
                         <th>@progress.Totals.CompletedMinutes min</th>
-                        <th>@progress.Totals.CompliancePercent%</th>
+                        <th class="@VarianceClass(totalVariance)">@FormatVariance(totalVariance)</th>
+                        <th class="@ComplianceClass(progress.Totals.CompliancePercent)">@progress.Totals.CompliancePercent%</th>
                     </tr>
                 </tfoot>
             </table>
@@ -152,4 +171,25 @@ else
                 DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
         }
     }
+
+    private static string DisciplineIcon(ActivityType discipline) => discipline switch
+    {
+        ActivityType.Run   => "🏃",
+        ActivityType.Cycle => "🚴",
+        ActivityType.Swim  => "🏊",
+        _                  => ""
+    };
+
+    private static string ComplianceClass(decimal pct) =>
+        pct >= 90 ? "tt-compliance-good" : pct >= 70 ? "tt-compliance-ok" : "tt-compliance-low";
+
+    private static string ComplianceBadgeClass(decimal pct) =>
+        pct >= 90 ? "tt-compliance-badge-good" : pct >= 70 ? "tt-compliance-badge-ok" : "tt-compliance-badge-low";
+
+    private static string VarianceClass(int variance) =>
+        variance > 0 ? "tt-variance-positive" : variance < 0 ? "tt-variance-negative" : "tt-variance-neutral";
+
+    private static string FormatVariance(int variance) =>
+        variance == 0 ? "—" : $"{(variance > 0 ? "+" : "")}{variance} min";
 }
+
