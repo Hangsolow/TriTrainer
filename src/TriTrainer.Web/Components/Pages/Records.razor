@@ -1,0 +1,161 @@
+@page "/records"
+@rendermode InteractiveServer
+@inject ActivityApiClient ApiClient
+
+<PageTitle>Records</PageTitle>
+
+<h1 class="page-title">Personal Records</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<section class="surface-card mb-4">
+    <h2>Add Record</h2>
+    <div class="row g-2">
+        <div class="col-md-3">
+            <label class="form-label">Discipline</label>
+            <select class="form-select" @bind="discipline">
+                @foreach (var value in Enum.GetValues<ActivityType>())
+                {
+                    <option value="@value">@value</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Metric</label>
+            <select class="form-select" @bind="metric">
+                @foreach (var value in Enum.GetValues<PersonalRecordMetric>())
+                {
+                    <option value="@value">@value</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Value</label>
+            <input class="form-control" type="number" step="0.01" @bind="recordValue" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Achieved On</label>
+            <input class="form-control" type="date" @bind="achievedOnDate" />
+        </div>
+    </div>
+    <button class="btn btn-primary mt-3" @onclick="CreateRecord">Add Record</button>
+</section>
+
+<section class="surface-card">
+    <h2>Record List</h2>
+
+    @if (isLoading)
+    {
+        <p class="text-muted">Loading records...</p>
+    }
+    else if (records.Count == 0)
+    {
+        <p class="text-muted">No records yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Discipline</th>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var record in records)
+                    {
+                        <tr>
+                            <td>@record.Discipline</td>
+                            <td>@record.Metric</td>
+                            <td>@record.Value</td>
+                            <td>@record.AchievedOn.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private List<PersonalRecord> records = [];
+
+    private ActivityType discipline = ActivityType.Run;
+    private PersonalRecordMetric metric = PersonalRecordMetric.Fastest5k;
+    private decimal recordValue = 1;
+    private DateTime achievedOnDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await EnsureProfileAsync();
+        await LoadRecordsAsync();
+    }
+
+    private async Task LoadRecordsAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            records = await ApiClient.GetRecordsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load records: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CreateRecord()
+    {
+        errorMessage = null;
+
+        var achievedOn = DateOnly.FromDateTime(achievedOnDate.Date);
+
+        if (recordValue <= 0)
+        {
+            errorMessage = "Value must be greater than 0.";
+            return;
+        }
+
+        try
+        {
+            await ApiClient.CreateRecordAsync(new CreatePersonalRecordRequest(
+                discipline,
+                metric,
+                recordValue,
+                achievedOn,
+                null));
+
+            await LoadRecordsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to add record: {ex.Message}";
+        }
+    }
+
+    private async Task EnsureProfileAsync()
+    {
+        var profile = await ApiClient.GetAthleteProfileAsync();
+        if (profile is null)
+        {
+            await ApiClient.UpsertAthleteProfileAsync(new UpsertAthleteProfileRequest(
+                "Triathlete",
+                8,
+                DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
+        }
+    }
+}

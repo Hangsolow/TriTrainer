@@ -1,0 +1,193 @@
+@page "/plans"
+@rendermode InteractiveServer
+@inject ActivityApiClient ApiClient
+
+<PageTitle>Plans</PageTitle>
+
+<h1 class="page-title">Plans</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<section class="surface-card mb-4">
+    <h2>Create Plan</h2>
+    <div class="row g-2">
+        <div class="col-md-3">
+            <label class="form-label">Goal</label>
+            <select class="form-select" @bind="selectedGoalId">
+                <option value="">Select goal</option>
+                @foreach (var goal in goals)
+                {
+                    <option value="@goal.Id">@goal.GoalType - @goal.TargetDate.ToString("yyyy-MM-dd") (@goal.Status)</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Name</label>
+            <input class="form-control" @bind="planName" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Start Date</label>
+            <input class="form-control" type="date" @bind="startDate" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Weeks</label>
+            <input class="form-control" type="number" min="4" max="16" @bind="weekCount" />
+        </div>
+    </div>
+    <button class="btn btn-primary mt-3" @onclick="CreatePlan">Create Plan</button>
+</section>
+
+<section class="surface-card">
+    <h2>Plan List</h2>
+
+    @if (isLoading)
+    {
+        <p class="text-muted">Loading plans...</p>
+    }
+    else if (plans.Count == 0)
+    {
+        <p class="text-muted">No plans yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Range</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var plan in plans)
+                    {
+                        <tr>
+                            <td>@plan.Name</td>
+                            <td>@plan.Status</td>
+                            <td>@plan.StartDate.ToString("yyyy-MM-dd") to @plan.EndDate.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => LoadPlan(plan.Id)">Details</button>
+                                <a class="btn btn-sm btn-outline-primary" href="@($"progress?planId={plan.Id}&weekStart={plan.StartDate:yyyy-MM-dd}")">Progress</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@if (selectedPlan is not null)
+{
+    <section class="surface-card mt-4">
+        <h2>@selectedPlan.Name - Weeks</h2>
+
+        @foreach (var week in selectedPlan.Weeks.OrderBy(w => w.WeekIndex))
+        {
+            <div class="mb-2 p-2 border rounded bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <strong>Week @week.WeekIndex (@week.WeekStartDate.ToString("yyyy-MM-dd"))</strong>
+                    <a class="btn btn-sm btn-outline-primary" href="@($"progress?planId={selectedPlan.Id}&weekStart={week.WeekStartDate:yyyy-MM-dd}")">View Progress</a>
+                </div>
+                @if (week.Sessions.Count == 0)
+                {
+                    <p class="text-muted mb-0 mt-2">No planned sessions yet.</p>
+                }
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private List<Goal> goals = [];
+    private List<PlanSummary> plans = [];
+    private PlanDetail? selectedPlan;
+
+    private string? selectedGoalId;
+    private string planName = "Base Build";
+    private DateTime startDate = DateTime.Today;
+    private int weekCount = 4;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await EnsureProfileAsync();
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            goals = await ApiClient.GetGoalsAsync();
+            plans = await ApiClient.GetPlansAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load plans data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CreatePlan()
+    {
+        errorMessage = null;
+
+        if (!Guid.TryParse(selectedGoalId, out var goalId))
+        {
+            errorMessage = "Please select a goal before creating a plan.";
+            return;
+        }
+
+        var parsedStartDate = DateOnly.FromDateTime(startDate.Date);
+
+        try
+        {
+            await ApiClient.CreatePlanAsync(new CreatePlanRequest(goalId, planName, parsedStartDate, weekCount));
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to create plan: {ex.Message}";
+        }
+    }
+
+    private async Task LoadPlan(Guid id)
+    {
+        errorMessage = null;
+
+        try
+        {
+            selectedPlan = await ApiClient.GetPlanAsync(id);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load plan details: {ex.Message}";
+        }
+    }
+
+    private async Task EnsureProfileAsync()
+    {
+        var profile = await ApiClient.GetAthleteProfileAsync();
+        if (profile is null)
+        {
+            await ApiClient.UpsertAthleteProfileAsync(new UpsertAthleteProfileRequest(
+                "Triathlete",
+                8,
+                DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
+        }
+    }
+}

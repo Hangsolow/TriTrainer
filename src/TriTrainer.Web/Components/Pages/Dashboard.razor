@@ -1,0 +1,137 @@
+@page "/"
+@page "/dashboard"
+@rendermode InteractiveServer
+@inject ActivityApiClient ApiClient
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1 class="page-title">Dashboard</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (isLoading)
+{
+    <p class="text-muted">Loading dashboard...</p>
+}
+else
+{
+    <div class="grid-cards">
+        <section class="surface-card">
+            <h2>Profile</h2>
+            @if (profile is null)
+            {
+                <p class="text-muted">No athlete profile found.</p>
+            }
+            else
+            {
+                <p class="mb-1"><strong>@profile.DisplayName</strong></p>
+                <p class="mb-1">Weekly hours available: @profile.WeeklyHoursAvailable</p>
+                <p class="mb-0">Primary event: @(profile.PrimaryEventDate?.ToString("yyyy-MM-dd") ?? "Not set")</p>
+            }
+        </section>
+
+        <section class="surface-card">
+            <h2>Active Goal</h2>
+            @if (activeGoal is null)
+            {
+                <p class="text-muted">No active goal yet.</p>
+                <a class="btn btn-sm btn-outline-primary" href="goals">Create goal</a>
+            }
+            else
+            {
+                <p class="mb-1"><strong>@activeGoal.GoalType</strong></p>
+                <p class="mb-1">Discipline: @(activeGoal.Discipline?.ToString() ?? "Any")</p>
+                <p class="mb-0">Target date: @activeGoal.TargetDate.ToString("yyyy-MM-dd")</p>
+            }
+        </section>
+
+        <section class="surface-card">
+            <h2>Current Plan</h2>
+            @if (currentPlan is null)
+            {
+                <p class="text-muted">No plan available yet.</p>
+                <a class="btn btn-sm btn-outline-primary" href="plans">Create plan</a>
+            }
+            else
+            {
+                <p class="mb-1"><strong>@currentPlan.Name</strong> (@currentPlan.Status)</p>
+                <p class="mb-0">@currentPlan.StartDate.ToString("yyyy-MM-dd") to @currentPlan.EndDate.ToString("yyyy-MM-dd")</p>
+                <a class="btn btn-sm btn-outline-primary mt-3" href="@($"progress?planId={currentPlan.Id}&weekStart={currentPlan.StartDate:yyyy-MM-dd}")">Open weekly progress</a>
+            }
+        </section>
+
+        <section class="surface-card">
+            <h2>Weekly Compliance</h2>
+            @if (weeklyProgress is null)
+            {
+                <p class="text-muted">No progress data yet for the selected plan week.</p>
+            }
+            else
+            {
+                <p class="mb-1"><strong>Total planned:</strong> @weeklyProgress.Totals.PlannedMinutes min</p>
+                <p class="mb-1"><strong>Total completed:</strong> @weeklyProgress.Totals.CompletedMinutes min</p>
+                <p class="mb-0"><strong>Compliance:</strong> @weeklyProgress.Totals.CompliancePercent%</p>
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private AthleteProfile? profile;
+    private Goal? activeGoal;
+    private PlanSummary? currentPlan;
+    private WeeklyProgressResponse? weeklyProgress;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            profile = await EnsureProfileAsync();
+            if (profile is null)
+            {
+                return;
+            }
+
+            var goals = await ApiClient.GetGoalsAsync();
+            activeGoal = goals.FirstOrDefault(g => g.Status == GoalStatus.Active)
+                ?? goals.FirstOrDefault(g => g.Status == GoalStatus.Draft);
+
+            var plans = await ApiClient.GetPlansAsync();
+            currentPlan = plans.FirstOrDefault(p => p.Status == PlanStatus.Active)
+                ?? plans.FirstOrDefault();
+
+            if (currentPlan is not null)
+            {
+                weeklyProgress = await ApiClient.GetWeeklyProgressAsync(currentPlan.Id, currentPlan.StartDate);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load dashboard: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task<AthleteProfile?> EnsureProfileAsync()
+    {
+        var existing = await ApiClient.GetAthleteProfileAsync();
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        return await ApiClient.UpsertAthleteProfileAsync(new UpsertAthleteProfileRequest(
+            "Triathlete",
+            8,
+            DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
+    }
+}

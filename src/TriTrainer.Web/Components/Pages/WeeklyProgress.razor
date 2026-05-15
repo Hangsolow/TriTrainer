@@ -1,0 +1,155 @@
+@page "/progress"
+@rendermode InteractiveServer
+@inject ActivityApiClient ApiClient
+
+<PageTitle>Weekly Progress</PageTitle>
+
+<h1 class="page-title">Weekly Progress</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<section class="surface-card mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-6">
+            <label class="form-label">Plan</label>
+            <select class="form-select" @bind="selectedPlanId">
+                <option value="">Select plan</option>
+                @foreach (var plan in plans)
+                {
+                    <option value="@plan.Id">@plan.Name (@plan.Status)</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Week Start</label>
+            <input class="form-control" type="date" @bind="weekStartDate" />
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" @onclick="LoadProgress">Load</button>
+        </div>
+    </div>
+</section>
+
+@if (isLoading)
+{
+    <p class="text-muted">Loading progress...</p>
+}
+else if (progress is null)
+{
+    <p class="text-muted">Select a plan and week to view progress.</p>
+}
+else
+{
+    <section class="surface-card">
+        <h2>Plan Week: @progress.WeekStartDate.ToString("yyyy-MM-dd")</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Discipline</th>
+                        <th>Planned</th>
+                        <th>Completed</th>
+                        <th>Compliance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in progress.Disciplines)
+                    {
+                        <tr>
+                            <td>@row.Discipline</td>
+                            <td>@row.PlannedMinutes min</td>
+                            <td>@row.CompletedMinutes min</td>
+                            <td>@row.CompliancePercent%</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total</th>
+                        <th>@progress.Totals.PlannedMinutes min</th>
+                        <th>@progress.Totals.CompletedMinutes min</th>
+                        <th>@progress.Totals.CompliancePercent%</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </section>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "planId")]
+    public Guid? PlanId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "weekStart")]
+    public string? WeekStart { get; set; }
+
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private List<PlanSummary> plans = [];
+    private WeeklyProgressResponse? progress;
+
+    private string? selectedPlanId;
+    private DateTime weekStartDate = DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await EnsureProfileAsync();
+
+        plans = await ApiClient.GetPlansAsync();
+        selectedPlanId = PlanId?.ToString() ?? plans.FirstOrDefault()?.Id.ToString();
+
+        if (!string.IsNullOrWhiteSpace(WeekStart) && DateTime.TryParse(WeekStart, out var parsedWeekStart))
+        {
+            weekStartDate = parsedWeekStart.Date;
+        }
+        else if (plans.Count > 0)
+        {
+            weekStartDate = plans[0].StartDate.ToDateTime(TimeOnly.MinValue);
+        }
+
+        await LoadProgress();
+    }
+
+    private async Task LoadProgress()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            if (!Guid.TryParse(selectedPlanId, out var planId))
+            {
+                progress = null;
+                return;
+            }
+
+            var weekStart = DateOnly.FromDateTime(weekStartDate.Date);
+            progress = await ApiClient.GetWeeklyProgressAsync(planId, weekStart);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load weekly progress: {ex.Message}";
+            progress = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task EnsureProfileAsync()
+    {
+        var profile = await ApiClient.GetAthleteProfileAsync();
+        if (profile is null)
+        {
+            await ApiClient.UpsertAthleteProfileAsync(new UpsertAthleteProfileRequest(
+                "Triathlete",
+                8,
+                DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
+        }
+    }
+}

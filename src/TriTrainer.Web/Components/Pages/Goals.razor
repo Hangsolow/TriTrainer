@@ -1,0 +1,182 @@
+@page "/goals"
+@rendermode InteractiveServer
+@inject ActivityApiClient ApiClient
+
+<PageTitle>Goals</PageTitle>
+
+<h1 class="page-title">Goals</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<section class="surface-card mb-4">
+    <h2>Create Goal</h2>
+    <div class="row g-2">
+        <div class="col-md-3">
+            <label class="form-label">Goal Type</label>
+            <select class="form-select" @bind="goalType">
+                @foreach (var value in Enum.GetValues<GoalType>())
+                {
+                    <option value="@value">@value</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Discipline</label>
+            <select class="form-select" @bind="disciplineSelection">
+                <option value="">Any</option>
+                @foreach (var value in Enum.GetValues<ActivityType>())
+                {
+                    <option value="@value">@value</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Target Value</label>
+            <input class="form-control" type="number" step="0.1" @bind="targetValue" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Target Date</label>
+            <input class="form-control" type="date" @bind="targetDate" />
+        </div>
+    </div>
+    <button class="btn btn-primary mt-3" @onclick="CreateGoal">Create Goal</button>
+</section>
+
+<section class="surface-card">
+    <h2>Goal List</h2>
+
+    @if (isLoading)
+    {
+        <p class="text-muted">Loading goals...</p>
+    }
+    else if (goals.Count == 0)
+    {
+        <p class="text-muted">No goals yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Discipline</th>
+                        <th>Target Date</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var goal in goals)
+                    {
+                        <tr>
+                            <td>@goal.GoalType</td>
+                            <td>@(goal.Discipline?.ToString() ?? "Any")</td>
+                            <td>@goal.TargetDate.ToString("yyyy-MM-dd")</td>
+                            <td>@goal.Status</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-success" disabled="@(goal.Status == GoalStatus.Active)" @onclick="() => UpdateStatus(goal.Id, GoalStatus.Active)">Activate</button>
+                                    <button class="btn btn-outline-secondary" disabled="@(goal.Status == GoalStatus.Archived)" @onclick="() => UpdateStatus(goal.Id, GoalStatus.Archived)">Archive</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private List<Goal> goals = [];
+
+    private GoalType goalType = GoalType.EventFinish;
+    private string? disciplineSelection;
+    private decimal? targetValue;
+    private DateTime targetDate = DateTime.Today.AddDays(90);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await EnsureProfileAsync();
+        await LoadGoalsAsync();
+    }
+
+    private async Task LoadGoalsAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            goals = await ApiClient.GetGoalsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load goals: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CreateGoal()
+    {
+        errorMessage = null;
+
+        var parsedTargetDate = DateOnly.FromDateTime(targetDate.Date);
+
+        if (parsedTargetDate <= DateOnly.FromDateTime(DateTime.Today))
+        {
+            errorMessage = "Target date must be in the future.";
+            return;
+        }
+
+        var discipline = string.IsNullOrWhiteSpace(disciplineSelection)
+            ? (ActivityType?)null
+            : Enum.Parse<ActivityType>(disciplineSelection);
+
+        try
+        {
+            await ApiClient.CreateGoalAsync(new CreateGoalRequest(goalType, discipline, targetValue, parsedTargetDate));
+            await LoadGoalsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to create goal: {ex.Message}";
+        }
+    }
+
+    private async Task UpdateStatus(Guid goalId, GoalStatus status)
+    {
+        errorMessage = null;
+
+        try
+        {
+            await ApiClient.UpdateGoalStatusAsync(goalId, status);
+            await LoadGoalsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to update goal status: {ex.Message}";
+        }
+    }
+
+    private async Task EnsureProfileAsync()
+    {
+        var profile = await ApiClient.GetAthleteProfileAsync();
+        if (profile is null)
+        {
+            await ApiClient.UpsertAthleteProfileAsync(new UpsertAthleteProfileRequest(
+                "Triathlete",
+                8,
+                DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
+        }
+    }
+}
