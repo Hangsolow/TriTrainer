@@ -1,0 +1,20 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.3.2">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>8e11ce7d-81e0-4119-a859-d57ae14dd4cf</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TriTrainer.ApiService\TriTrainer.ApiService.csproj" />
+    <ProjectReference Include="..\TriTrainer.Web\TriTrainer.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.3.2" />
+  </ItemGroup>
+
+</Project>

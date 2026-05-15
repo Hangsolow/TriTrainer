@@ -1,0 +1,47 @@
+# ------------------------------
+# .NET build artifacts
+# ------------------------------
+**/bin/
+**/obj/
+**/out/
+**/TestResults/
+
+# ------------------------------
+# IDE / editor local state
+# ------------------------------
+.vscode/
+.vs/
+.idea/
+dist/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ------------------------------
+# Tooling and local automation artifacts
+# ------------------------------
+playwright-screenshots/
+
+# MCP local workspace config (local-only)
+.mcp.json
+
+# ------------------------------
+# Logs and temp files
+# ------------------------------
+*.log
+*.tmp
+*.temp
+*.cache
+*.pid
+*.lscache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package caches
+node_modules/

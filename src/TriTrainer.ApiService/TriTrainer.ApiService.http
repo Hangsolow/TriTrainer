@@ -1,0 +1,57 @@
+@ApiService_HostAddress = http://localhost:5398
+
+### Get all activities for a month
+GET {{ApiService_HostAddress}}/activities?year=2026&month=4
+Accept: application/json
+
+###
+
+### Get all activities (no filter)
+GET {{ApiService_HostAddress}}/activities
+Accept: application/json
+
+###
+
+### Add a run activity
+POST {{ApiService_HostAddress}}/activities
+Content-Type: application/json
+
+{
+  "date": "2026-04-30",
+  "type": "Run",
+  "durationMinutes": 45,
+  "notes": "Easy morning run"
+}
+
+###
+
+### Add a cycle activity
+POST {{ApiService_HostAddress}}/activities
+Content-Type: application/json
+
+{
+  "date": "2026-04-29",
+  "type": "Cycle",
+  "durationMinutes": 90,
+  "notes": "Long ride"
+}
+
+###
+
+### Add a swim activity
+POST {{ApiService_HostAddress}}/activities
+Content-Type: application/json
+
+{
+  "date": "2026-04-28",
+  "type": "Swim",
+  "durationMinutes": 30,
+  "notes": "500m intervals"
+}
+
+###
+
+### Delete an activity (replace id with a real GUID)
+DELETE {{ApiService_HostAddress}}/activities/00000000-0000-0000-0000-000000000000
+
+###

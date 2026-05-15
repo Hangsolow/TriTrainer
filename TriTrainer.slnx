@@ -1,0 +1,10 @@
+<Solution>
+  <Project Path="src/TriTrainer.ApiService/TriTrainer.ApiService.csproj" />
+  <Project Path="src/TriTrainer.AppHost/TriTrainer.AppHost.csproj" />
+  <Project Path="src/TriTrainer.ServiceDefaults/TriTrainer.ServiceDefaults.csproj" />
+  <Project Path="src/TriTrainer.Web/TriTrainer.Web.csproj" />
+  <Project Path="tests/TriTrainer.ApiService.Tests/TriTrainer.ApiService.Tests.csproj" />
+  <Project Path="tests/TriTrainer.Web.Tests/TriTrainer.Web.Tests.csproj" />
+  <Project Path="tests/TriTrainer.ServiceDefaults.Tests/TriTrainer.ServiceDefaults.Tests.csproj" />
+  <Project Path="tests/TriTrainer.IntegrationTests/TriTrainer.IntegrationTests.csproj" />
+</Solution>
