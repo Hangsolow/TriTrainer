@@ -1,0 +1,42 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">TriTrainer</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="nav-symbol" aria-hidden="true">DB</span> Dashboard
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="goals">
+                <span class="nav-symbol" aria-hidden="true">GL</span> Goals
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="plans">
+                <span class="nav-symbol" aria-hidden="true">PL</span> Plans
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="progress">
+                <span class="nav-symbol" aria-hidden="true">PG</span> Weekly Progress
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="records">
+                <span class="nav-symbol" aria-hidden="true">PR</span> Records
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="calendar">
+                <span class="nav-symbol" aria-hidden="true">AC</span> Activities
+            </NavLink>
+        </div>
+    </nav>
+</div>

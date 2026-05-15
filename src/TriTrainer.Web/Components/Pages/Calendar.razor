@@ -1,0 +1,176 @@
+@page "/calendar"
+@rendermode InteractiveServer
+@inject ActivityApiClient ApiClient
+
+<PageTitle>Training Calendar</PageTitle>
+
+<div class="calendar-header d-flex align-items-center justify-content-between mb-3">
+    <button class="btn btn-outline-secondary btn-sm" @onclick="PrevMonth">&#8249;</button>
+    <h2 class="m-0">@CurrentDate.ToString("MMMM yyyy")</h2>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="NextMonth">&#8250;</button>
+</div>
+
+@if (isLoading)
+{
+    <p class="text-muted">Loading activities...</p>
+}
+else
+{
+    <div class="calendar-grid">
+        @foreach (var day in WeekdayHeaders)
+        {
+            <div class="calendar-cell calendar-header-cell">@day</div>
+        }
+
+        @foreach (var cell in CalendarCells)
+        {
+            <div class="calendar-cell @(cell.IsCurrentMonth ? "" : "other-month") @(cell.Date == DateOnly.FromDateTime(DateTime.Today) ? "today" : "")"
+                 @onclick="() => SelectDay(cell.Date)"
+                 style="cursor: pointer;">
+                <div class="day-number">@cell.Date.Day</div>
+                @foreach (var activity in cell.Activities)
+                {
+                    <div class="activity-badge activity-@activity.Type.ToString().ToLower()" title="@activity.DurationMinutes min @(activity.Notes is not null ? "- " + activity.Notes : "")">
+                        @ActivityIcon(activity.Type) @activity.DurationMinutes min
+                        <button class="badge-delete" title="Delete" @onclick:stopPropagation="true" @onclick="() => DeleteActivity(activity.Id)">✕</button>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@if (selectedDate.HasValue)
+{
+    <div class="add-activity-form mt-4 p-3 border rounded">
+        <h5>Add activity for @selectedDate.Value.ToString("MMMM d")</h5>
+        <div class="row g-2">
+            <div class="col-sm-3">
+                <select class="form-select" @bind="newActivityType">
+                    @foreach (var type in Enum.GetValues<ActivityType>())
+                    {
+                        <option value="@type">@ActivityIcon(type) @type</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <div class="input-group">
+                    <input type="number" class="form-control" placeholder="Duration" min="1" @bind="newDuration" />
+                    <span class="input-group-text">min</span>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" placeholder="Notes (optional)" @bind="newNotes" />
+            </div>
+            <div class="col-sm-2 d-flex gap-2">
+                <button class="btn btn-primary btn-sm" @onclick="AddActivity" disabled="@(newDuration <= 0)">Add</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="() => selectedDate = null">Cancel</button>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <p class="text-danger mt-2">@errorMessage</p>
+        }
+    </div>
+}
+
+@code {
+    private static readonly string[] WeekdayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    private DateOnly CurrentDate = DateOnly.FromDateTime(DateTime.Today).AddDays(1 - DateTime.Today.Day);
+    private List<Activity> activities = [];
+    private bool isLoading = true;
+
+    private DateOnly? selectedDate;
+    private ActivityType newActivityType = ActivityType.Run;
+    private int newDuration;
+    private string? newNotes;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadActivities();
+
+    private async Task LoadActivities()
+    {
+        isLoading = true;
+        activities = await ApiClient.GetActivitiesAsync(CurrentDate.Year, CurrentDate.Month);
+        isLoading = false;
+    }
+
+    private async Task PrevMonth()
+    {
+        CurrentDate = CurrentDate.AddMonths(-1);
+        await LoadActivities();
+    }
+
+    private async Task NextMonth()
+    {
+        CurrentDate = CurrentDate.AddMonths(1);
+        await LoadActivities();
+    }
+
+    private void SelectDay(DateOnly date)
+    {
+        selectedDate = date;
+        newActivityType = ActivityType.Run;
+        newDuration = 0;
+        newNotes = null;
+        errorMessage = null;
+    }
+
+    private async Task AddActivity()
+    {
+        if (newDuration <= 0 || !selectedDate.HasValue) return;
+
+        try
+        {
+            errorMessage = null;
+            await ApiClient.AddActivityAsync(new CreateActivityRequest(
+                selectedDate.Value, newActivityType, newDuration, string.IsNullOrWhiteSpace(newNotes) ? null : newNotes));
+            selectedDate = null;
+            await LoadActivities();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to add activity: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteActivity(Guid id)
+    {
+        await ApiClient.DeleteActivityAsync(id);
+        await LoadActivities();
+    }
+
+    private IEnumerable<CalendarCell> CalendarCells
+    {
+        get
+        {
+            var firstDay = CurrentDate;
+            var lastDay = CurrentDate.AddMonths(1).AddDays(-1);
+
+            // Find Monday on or before the first day
+            int offset = ((int)firstDay.DayOfWeek + 6) % 7;
+            var start = firstDay.AddDays(-offset);
+
+            // Generate 6 weeks worth of cells
+            for (int i = 0; i < 42; i++)
+            {
+                var date = start.AddDays(i);
+                yield return new CalendarCell(
+                    date,
+                    date >= firstDay && date <= lastDay,
+                    activities.Where(a => a.Date == date).ToList());
+            }
+        }
+    }
+
+    private static string ActivityIcon(ActivityType type) => type switch
+    {
+        ActivityType.Run => "🏃",
+        ActivityType.Cycle => "🚴",
+        ActivityType.Swim => "🏊",
+        _ => "•"
+    };
+
+    record CalendarCell(DateOnly Date, bool IsCurrentMonth, List<Activity> Activities);
+}
