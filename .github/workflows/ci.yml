@@ -1,0 +1,256 @@
+# TriTrainer CI
+# Runs on every push to main and on every pull request targeting main.
+#
+# Jobs:
+#   unit-tests          — build + ApiService.Tests + Web.Tests + ServiceDefaults.Tests (no Docker needed)
+#   integration-tests   — build + TriTrainer.IntegrationTests (TUnit.Aspire; starts Aspire AppHost + Docker containers)
+#   playwright-smoke    — build + TriTrainer.PlaywrightTests   (TUnit.Aspire + Playwright; starts Aspire stack + runs browser tests)
+#
+# TUnit notes:
+#   All TUnit test projects use OutputType=Exe and must be run with `dotnet run`, NOT `dotnet test`.
+#   Args after `--` are forwarded to the MTP test runner (e.g. --report-trx).
+#
+# Docker notes:
+#   integration-tests and playwright-smoke require Docker to spin up the PostgreSQL container that
+#   the Aspire AppHost starts internally via TUnit.Aspire. GitHub Actions ubuntu-latest runners have
+#   Docker Engine pre-installed and running — no additional service configuration is needed.
+#
+# Playwright notes:
+#   playwright-smoke installs the Chromium browser (and system deps) after build using the bundled
+#   playwright.ps1 script produced by the Microsoft.Playwright package.
+#   Pre-requisite: the AppHost must be reachable; TUnit.Aspire manages this transparently.
+
+name: CI
+
+on:
+  push:
+    branches: [main, feature/sprint-4]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 1: Build + Unit Tests
+  # Runs: ApiService.Tests (137), Web.Tests (27), ServiceDefaults.Tests (27)
+  # No Docker required.
+  # ─────────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore TriTrainer.slnx
+
+      - name: Build solution
+        run: dotnet build TriTrainer.slnx --configuration Release --no-restore
+
+      - name: Run ApiService.Tests
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.ApiService.Tests/TriTrainer.ApiService.Tests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/unit/apiservice"
+
+      - name: Run Web.Tests
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.Web.Tests/TriTrainer.Web.Tests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/unit/web"
+
+      - name: Run ServiceDefaults.Tests
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.ServiceDefaults.Tests/TriTrainer.ServiceDefaults.Tests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/unit/servicedefaults"
+
+      - name: Write unit lane evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/TestResults/ledger"
+          {
+            echo "lane=unit"
+            echo "run_id=${{ github.run_id }}"
+            echo "run_attempt=${{ github.run_attempt }}"
+            echo "commit_sha=${{ github.sha }}"
+            echo "ref=${{ github.ref }}"
+          } > "${{ github.workspace }}/TestResults/ledger/unit-manifest.txt"
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-${{ github.run_id }}-${{ github.run_attempt }}-unit
+          path: |
+            TestResults/unit/
+            TestResults/ledger/unit-manifest.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 2: Integration Tests
+  # Runs: TriTrainer.IntegrationTests (5 tests, TUnit.Aspire)
+  # Requires Docker — ubuntu-latest has Docker Engine pre-installed.
+  # TUnit.Aspire starts the Aspire AppHost (web + api + postgres container) in-process.
+  # ─────────────────────────────────────────────────────────────────────────────
+  integration-tests:
+    name: Integration Tests (Docker)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore TriTrainer.slnx
+
+      - name: Build solution
+        run: dotnet build TriTrainer.slnx --configuration Release --no-restore
+
+      - name: Docker preflight
+        run: docker info
+
+      - name: Run IntegrationTests
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.IntegrationTests/TriTrainer.IntegrationTests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/integration"
+
+      - name: Write integration lane evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/TestResults/ledger"
+          {
+            echo "lane=integration"
+            echo "run_id=${{ github.run_id }}"
+            echo "run_attempt=${{ github.run_attempt }}"
+            echo "commit_sha=${{ github.sha }}"
+            echo "ref=${{ github.ref }}"
+          } > "${{ github.workspace }}/TestResults/ledger/integration-manifest.txt"
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-${{ github.run_id }}-${{ github.run_attempt }}-integration
+          path: |
+            TestResults/integration/
+            TestResults/ledger/integration-manifest.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 3: Playwright Smoke Tests
+  # Runs: TriTrainer.PlaywrightTests (19 tests, TUnit.Aspire + Playwright)
+  # Requires Docker (for Aspire AppHost) and Chromium (installed via playwright.ps1).
+  # Depends on unit-tests and integration-tests passing first.
+  #
+  # Pre-requisites enforced here:
+  #   1. Docker available (ubuntu-latest) — Aspire AppHost starts postgres container.
+  #   2. Chromium installed via `playwright install --with-deps chromium`.
+  #   3. TUnit.Aspire resolves the webfrontend URL from the AppHost before any assertion.
+  #
+  # Timeout budget: 10 minutes per test run (CI_PLAYWRIGHT_TIMEOUT env var).
+  # If flaky: the job is marked `continue-on-error: true` so it does not block merge;
+  # failures are documented in the uploaded artifact and progress.md.
+  # ─────────────────────────────────────────────────────────────────────────────
+  playwright-smoke:
+    name: Playwright Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    continue-on-error: true   # Playwright is gated but non-blocking per sprint-3 merge policy
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore TriTrainer.slnx
+
+      - name: Build solution
+        run: dotnet build TriTrainer.slnx --configuration Release --no-restore
+
+      - name: Docker preflight
+        run: docker info
+
+      - name: Install Playwright Chromium
+        # The Microsoft.Playwright NuGet package generates playwright.ps1 during build.
+        # This installs Chromium plus required Linux system dependencies.
+        run: pwsh tests/TriTrainer.PlaywrightTests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: Run Playwright smoke tests
+        timeout-minutes: 10
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.PlaywrightTests/TriTrainer.PlaywrightTests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/playwright"
+
+      - name: Write playwright lane evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/TestResults/ledger"
+          {
+            echo "lane=playwright"
+            echo "run_id=${{ github.run_id }}"
+            echo "run_attempt=${{ github.run_attempt }}"
+            echo "commit_sha=${{ github.sha }}"
+            echo "ref=${{ github.ref }}"
+          } > "${{ github.workspace }}/TestResults/ledger/playwright-manifest.txt"
+
+      - name: Upload Playwright test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-${{ github.run_id }}-${{ github.run_attempt }}-playwright
+          path: |
+            TestResults/playwright/
+            TestResults/ledger/playwright-manifest.txt
+            playwright-screenshots/
+          if-no-files-found: warn
+          retention-days: 14
