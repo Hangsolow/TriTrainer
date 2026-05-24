@@ -30,7 +30,9 @@
 
 ## Blockers
 
-_None yet._
+| Date | Blocker | Owner | ETA | Escalation Path |
+|---|---|---|---|---|
+| 2026-05-24 | PR creation could not be executed from chat runtime due missing command execution for `gh`; requires local terminal run | Producer | Same day | Run `gh pr create --base main --head feature/sprint-5 --title "Sprint 5: Athlete Experience Expansion" --body-file docs/sprint-5/pr-handoff.md`; escalate to DevOps if GitHub auth fails |
 
 ## Notes
 
