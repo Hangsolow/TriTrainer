@@ -38,6 +38,19 @@ internal static class DashboardRecommendationHelpers
         _ => "calendar"
     };
 
+    internal static string RecommendationHrefWithContext(string? code, Guid? planId, DateOnly? weekStart)
+    {
+        var normalizedCode = NormalizeCode(code);
+
+        return normalizedCode switch
+        {
+            "consistency_recovery" or "consistency_build" or "consistency_maintain" or "streak_keepalive"
+                when planId.HasValue && weekStart.HasValue
+                => $"progress?planId={planId.Value}&weekStart={weekStart.Value:yyyy-MM-dd}",
+            _ => RecommendationHref(normalizedCode)
+        };
+    }
+
     internal static string RecommendationCtaLabel(string? code) => NormalizeCode(code) switch
     {
         "activate_plan" => "Open plans",
@@ -49,6 +62,40 @@ internal static class DashboardRecommendationHelpers
         "streak_keepalive" => "Keep streak",
         _ => "Open calendar"
     };
+
+    internal static string TrendWindowLabel(int weeksEvaluated) => weeksEvaluated <= 1
+        ? "latest 1-week trend"
+        : $"latest {weeksEvaluated}-week trend";
+
+    internal static string ComplianceBandClass(decimal? compliancePercent)
+    {
+        if (!compliancePercent.HasValue)
+        {
+            return "tt-variance-neutral";
+        }
+
+        return compliancePercent.Value switch
+        {
+            >= 90 => "tt-compliance-good",
+            >= 70 => "tt-compliance-ok",
+            _ => "tt-compliance-low"
+        };
+    }
+
+    internal static string ComplianceBandLabel(decimal? compliancePercent)
+    {
+        if (!compliancePercent.HasValue)
+        {
+            return "No data";
+        }
+
+        return compliancePercent.Value switch
+        {
+            >= 90 => "On track",
+            >= 70 => "Needs a push",
+            _ => "Needs attention"
+        };
+    }
 
     private static string NormalizeSeverity(string? severity) =>
         string.IsNullOrWhiteSpace(severity)

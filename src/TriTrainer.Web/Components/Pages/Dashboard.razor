@@ -5,7 +5,10 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<h1 class="page-title">Dashboard</h1>
+<header class="tt-dashboard-header">
+    <h1 class="page-title mb-1">Dashboard</h1>
+    <p class="tt-dashboard-subtitle mb-0">Review your current training status and act on the most important guidance first.</p>
+</header>
 
 @if (!string.IsNullOrEmpty(errorMessage))
 {
@@ -18,7 +21,83 @@
 }
 else
 {
-    <div class="grid-cards">
+    <div class="tt-dashboard-kpis" aria-label="Dashboard highlights">
+        <article class="tt-kpi-card">
+            <p class="tt-kpi-label">Active plan</p>
+            <p class="tt-kpi-value mb-0">@(currentPlan is null ? "No active plan" : currentPlan.Name)</p>
+        </article>
+        <article class="tt-kpi-card">
+            <p class="tt-kpi-label">Weekly compliance</p>
+            <p class="tt-kpi-value mb-0 @DashboardRecommendationHelpers.ComplianceBandClass(weeklyProgress?.Totals.CompliancePercent)">@DashboardRecommendationHelpers.ComplianceBandLabel(weeklyProgress?.Totals.CompliancePercent)</p>
+        </article>
+        <article class="tt-kpi-card">
+            <p class="tt-kpi-label">Next session</p>
+            <p class="tt-kpi-value mb-0">@(nextSession is null ? "Not scheduled" : $"{DisciplineIcon(nextSession.Discipline)} {nextSession.Discipline} {nextSession.SessionType}")</p>
+        </article>
+    </div>
+
+    <div class="grid-cards tt-dashboard-grid">
+        <section class="surface-card tt-card-priority">
+            <h2>Recommendations</h2>
+            <p class="tt-section-note">Start here for this week&apos;s highest-impact actions.</p>
+            @if (recommendationInsights is null)
+            {
+                <p class="text-muted mb-0">No recommendation insights available yet.</p>
+            }
+            else
+            {
+                var insights = DashboardRecommendationHelpers.InsightsOrEmpty(recommendationInsights);
+                @if (insights.Count == 0)
+                {
+                    <p class="text-muted mb-0">You are on track. Check back after your next workout.</p>
+                }
+                else
+                {
+                    <p class="mb-2 text-muted">Based on your @DashboardRecommendationHelpers.TrendWindowLabel(recommendationInsights.WeeksEvaluated).</p>
+                    <div class="tt-reco-list" role="list">
+                        @foreach (var insight in insights)
+                        {
+                            <article class="tt-reco-card" role="listitem">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <h3 class="tt-reco-title mb-1">@insight.Title</h3>
+                                    <span class="tt-severity-badge @DashboardRecommendationHelpers.SeverityBadgeClass(insight.Severity)">@DashboardRecommendationHelpers.SeverityLabel(insight.Severity)</span>
+                                </div>
+                                <p class="mb-1">@insight.Message</p>
+                                <p class="tt-reco-action mb-2"><strong>Action:</strong> @insight.Action</p>
+                                <a class="btn btn-sm btn-outline-primary" href="@DashboardRecommendationHelpers.RecommendationHrefWithContext(insight.Code, currentPlan?.Id, currentPlan?.StartDate)">@DashboardRecommendationHelpers.RecommendationCtaLabel(insight.Code)</a>
+                            </article>
+                        }
+                    </div>
+                }
+            }
+        </section>
+
+        <section class="surface-card tt-card-priority">
+            <h2>Weekly Compliance</h2>
+            <p class="tt-section-note">Compare planned and completed minutes for your current training week.</p>
+            @if (weeklyProgress is null)
+            {
+                <p class="text-muted mb-0">No progress data yet for the selected plan week.</p>
+            }
+            else
+            {
+                <dl class="tt-stat-list mb-0">
+                    <div>
+                        <dt>Total planned</dt>
+                        <dd>@weeklyProgress.Totals.PlannedMinutes min</dd>
+                    </div>
+                    <div>
+                        <dt>Total completed</dt>
+                        <dd>@weeklyProgress.Totals.CompletedMinutes min</dd>
+                    </div>
+                    <div>
+                        <dt>Compliance</dt>
+                        <dd class="@DashboardRecommendationHelpers.ComplianceBandClass(weeklyProgress.Totals.CompliancePercent)">@weeklyProgress.Totals.CompliancePercent%</dd>
+                    </div>
+                </dl>
+            }
+        </section>
+
         <section class="surface-card">
             <h2>Profile</h2>
             @if (profile is null)
@@ -64,24 +143,11 @@ else
         </section>
 
         <section class="surface-card">
-            <h2>Weekly Compliance</h2>
-            @if (weeklyProgress is null)
-            {
-                <p class="text-muted">No progress data yet for the selected plan week.</p>
-            }
-            else
-            {
-                <p class="mb-1"><strong>Total planned:</strong> @weeklyProgress.Totals.PlannedMinutes min</p>
-                <p class="mb-1"><strong>Total completed:</strong> @weeklyProgress.Totals.CompletedMinutes min</p>
-                <p class="mb-0"><strong>Compliance:</strong> @weeklyProgress.Totals.CompliancePercent%</p>
-            }
-        </section>
-
-        <section class="surface-card">
             <h2>Rolling 4-Week Compliance</h2>
+            <p class="tt-section-note">Trend view of your last four weekly compliance scores.</p>
             @if (progressSummary is null || progressSummary.WeeksSummary.Count == 0)
             {
-                <p class="text-muted">No compliance summary available.</p>
+                <p class="text-muted mb-0">No compliance summary available.</p>
             }
             else
             {
@@ -121,44 +187,11 @@ else
         </section>
 
         <section class="surface-card">
-            <h2>Recommendations</h2>
-            @if (recommendationInsights is null)
-            {
-                <p class="text-muted">No recommendation insights available yet.</p>
-            }
-            else
-            {
-                var insights = DashboardRecommendationHelpers.InsightsOrEmpty(recommendationInsights);
-                @if (insights.Count == 0)
-                {
-                    <p class="text-muted">You are on track. Check back after your next workout.</p>
-                }
-                else
-                {
-                    <p class="mb-2 text-muted">Based on your latest @recommendationInsights.WeeksEvaluated-week trend.</p>
-                    <div class="tt-reco-list">
-                        @foreach (var insight in insights)
-                        {
-                            <article class="tt-reco-card">
-                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <h3 class="tt-reco-title mb-1">@insight.Title</h3>
-                                    <span class="tt-severity-badge @DashboardRecommendationHelpers.SeverityBadgeClass(insight.Severity)">@DashboardRecommendationHelpers.SeverityLabel(insight.Severity)</span>
-                                </div>
-                                <p class="mb-1">@insight.Message</p>
-                                <p class="tt-reco-action mb-2"><strong>Action:</strong> @insight.Action</p>
-                                <a class="btn btn-sm btn-outline-primary" href="@DashboardRecommendationHelpers.RecommendationHref(insight.Code)">@DashboardRecommendationHelpers.RecommendationCtaLabel(insight.Code)</a>
-                            </article>
-                        }
-                    </div>
-                }
-            }
-        </section>
-
-        <section class="surface-card">
             <h2>Next Planned Session</h2>
+            <p class="tt-section-note">Your upcoming workout in the active plan.</p>
             @if (nextSession is null)
             {
-                <p class="text-muted">No upcoming session found in the current plan.</p>
+                <p class="text-muted mb-0">No upcoming session found in the current plan.</p>
             }
             else
             {

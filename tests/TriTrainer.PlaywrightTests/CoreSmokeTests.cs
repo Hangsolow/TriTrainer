@@ -86,6 +86,22 @@ public class CoreSmokeTests(AppFixture fixture)
         return null;
     }
 
+    private static string Clip(string? value, int maxLength = 220)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "(none)";
+        }
+
+        var normalized = value.Replace("\r", " ").Replace("\n", " ").Trim();
+        if (normalized.Length <= maxLength)
+        {
+            return normalized;
+        }
+
+        return normalized[..maxLength] + "...";
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // SMOKE TEST 1 — DASHBOARD
     // Verifies: page loads, profile card visible, no console errors
@@ -512,16 +528,81 @@ public class CoreSmokeTests(AppFixture fixture)
         };
 
         var failures = new List<string>();
+        var diagnostics = new List<string>();
 
         foreach (var (path, expectedTitle) in routes)
         {
-            var response = await Page.GotoAsync($"{_baseUrl}{path}",
-                new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 30_000 });
+            var pageErrors = new List<string>();
+            var consoleErrors = new List<string>();
+            Exception? navigationException = null;
+            IResponse? response = null;
 
-            if (response?.Status >= 400)
+            void OnPageError(object? _, string message)
             {
-                failures.Add($"{path} → HTTP {response.Status}");
+                pageErrors.Add(Clip(message));
             }
+
+            void OnConsole(object? _, IConsoleMessage message)
+            {
+                if (string.Equals(message.Type, "error", StringComparison.OrdinalIgnoreCase))
+                {
+                    consoleErrors.Add(Clip(message.Text));
+                }
+            }
+
+            Page.PageError += OnPageError;
+            Page.Console += OnConsole;
+
+            try
+            {
+                response = await Page.GotoAsync($"{_baseUrl}{path}",
+                    new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 30_000 });
+            }
+            catch (Exception ex)
+            {
+                navigationException = ex;
+            }
+            finally
+            {
+                Page.PageError -= OnPageError;
+                Page.Console -= OnConsole;
+            }
+
+            var status = response?.Status;
+            var title = navigationException is null ? Clip(await Page.TitleAsync()) : "(navigation failed before title lookup)";
+            var routeDiagnostic =
+                $"{path} | expectedTitle='{expectedTitle}' | status={(status?.ToString() ?? "no-response")} | finalUrl='{Clip(Page.Url)}' | actualTitle='{title}' | pageErrors={pageErrors.Count} | consoleErrors={consoleErrors.Count}";
+
+            if (pageErrors.Count > 0)
+            {
+                routeDiagnostic += $" | firstPageError='{pageErrors[0]}'";
+            }
+
+            if (consoleErrors.Count > 0)
+            {
+                routeDiagnostic += $" | firstConsoleError='{consoleErrors[0]}'";
+            }
+
+            if (navigationException is not null)
+            {
+                routeDiagnostic += $" | navigationException='{Clip(navigationException.Message)}'";
+            }
+
+            diagnostics.Add(routeDiagnostic);
+
+            if (navigationException is not null || status is null || status >= 400)
+            {
+                failures.Add(routeDiagnostic);
+            }
+        }
+
+        if (failures.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "Smoke navigation route failures detected:\n"
+                + string.Join("\n", failures)
+                + "\n\nFull route diagnostics:\n"
+                + string.Join("\n", diagnostics));
         }
 
         await Assert.That(failures.Count).IsEqualTo(0);

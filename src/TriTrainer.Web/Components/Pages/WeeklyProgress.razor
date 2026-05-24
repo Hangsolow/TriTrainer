@@ -116,21 +116,31 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await EnsureProfileAsync();
-
-        plans = await ApiClient.GetPlansAsync();
-        selectedPlanId = PlanId?.ToString() ?? plans.FirstOrDefault()?.Id.ToString();
-
-        if (!string.IsNullOrWhiteSpace(WeekStart) && DateTime.TryParse(WeekStart, out var parsedWeekStart))
+        try
         {
-            weekStartDate = parsedWeekStart.Date;
-        }
-        else if (plans.Count > 0)
-        {
-            weekStartDate = plans[0].StartDate.ToDateTime(TimeOnly.MinValue);
-        }
+            await EnsureProfileAsync();
 
-        await LoadProgress();
+            plans = await ApiClient.GetPlansAsync();
+            selectedPlanId = PlanId?.ToString() ?? plans.FirstOrDefault()?.Id.ToString();
+
+            if (!string.IsNullOrWhiteSpace(WeekStart) && DateTime.TryParse(WeekStart, out var parsedWeekStart))
+            {
+                weekStartDate = parsedWeekStart.Date;
+            }
+            else if (plans.Count > 0)
+            {
+                weekStartDate = plans[0].StartDate.ToDateTime(TimeOnly.MinValue);
+            }
+
+            await LoadProgress();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to initialize weekly progress: {ex.Message}";
+            plans = [];
+            progress = null;
+            isLoading = false;
+        }
     }
 
     private async Task LoadProgress()

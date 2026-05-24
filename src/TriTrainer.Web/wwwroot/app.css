@@ -80,6 +80,45 @@ h1:focus {
     margin-bottom: 1rem;
 }
 
+.tt-dashboard-header {
+    margin-bottom: 0.9rem;
+}
+
+.tt-dashboard-subtitle {
+    color: var(--tt-muted);
+    max-width: 68ch;
+}
+
+.tt-dashboard-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.9rem;
+}
+
+.tt-kpi-card {
+    border: 1px solid var(--tt-border);
+    border-radius: 12px;
+    background: #fff;
+    padding: 0.65rem 0.75rem;
+}
+
+.tt-kpi-label {
+    margin: 0;
+    font-size: 0.79rem;
+    color: var(--tt-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+}
+
+.tt-kpi-value {
+    margin-top: 0.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
 .surface-card {
     background: linear-gradient(180deg, var(--tt-surface) 0%, var(--tt-surface-strong) 100%);
     border: 1px solid var(--tt-border);
@@ -97,6 +136,47 @@ h1:focus {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: 0.9rem;
+}
+
+.tt-dashboard-grid {
+    align-items: start;
+}
+
+.tt-card-priority {
+    grid-column: span 2;
+}
+
+.tt-section-note {
+    margin-top: -0.35rem;
+    margin-bottom: 0.7rem;
+    color: var(--tt-muted);
+    font-size: 0.9rem;
+}
+
+.tt-stat-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 0.55rem;
+}
+
+.tt-stat-list > div {
+    border: 1px solid var(--tt-border);
+    border-radius: 10px;
+    padding: 0.5rem 0.6rem;
+    background: #fff;
+}
+
+.tt-stat-list dt {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--tt-muted);
+    font-weight: 600;
+}
+
+.tt-stat-list dd {
+    margin: 0.15rem 0 0;
+    font-size: 1rem;
+    font-weight: 700;
 }
 
 /* ── Plan status badges ── */
@@ -326,5 +406,11 @@ h1:focus {
 .tt-severity-low {
     background: #d1fae5;
     color: #065f46;
+}
+
+@media (max-width: 991px) {
+    .tt-card-priority {
+        grid-column: span 1;
+    }
 }
 
