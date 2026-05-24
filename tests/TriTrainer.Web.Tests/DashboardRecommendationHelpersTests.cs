@@ -169,4 +169,60 @@ public class DashboardRecommendationHelpersTests
         await Assert.That(okLabel).IsEqualTo("Needs a push");
         await Assert.That(goodLabel).IsEqualTo("On track");
     }
+
+    [Test]
+    public async Task ResolveDailyCheckInQuickPath_UsesGoals_WhenNoActiveGoal()
+    {
+        var quickPath = DashboardRecommendationHelpers.ResolveDailyCheckInQuickPath(
+            hasActiveGoal: false,
+            currentPlanId: Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            currentPlanWeekStart: new DateOnly(2026, 05, 18),
+            nextSessionDate: new DateOnly(2026, 05, 24),
+            today: new DateOnly(2026, 05, 24));
+
+        await Assert.That(quickPath.Href).IsEqualTo("goals");
+        await Assert.That(quickPath.Label).IsEqualTo("Set today's goal");
+    }
+
+    [Test]
+    public async Task ResolveDailyCheckInQuickPath_UsesPlans_WhenPlanContextMissing()
+    {
+        var quickPath = DashboardRecommendationHelpers.ResolveDailyCheckInQuickPath(
+            hasActiveGoal: true,
+            currentPlanId: null,
+            currentPlanWeekStart: null,
+            nextSessionDate: new DateOnly(2026, 05, 24),
+            today: new DateOnly(2026, 05, 24));
+
+        await Assert.That(quickPath.Href).IsEqualTo("plans");
+        await Assert.That(quickPath.Label).IsEqualTo("Continue plan setup");
+    }
+
+    [Test]
+    public async Task ResolveDailyCheckInQuickPath_UsesCalendar_WhenSessionIsTodayOrEarlier()
+    {
+        var quickPath = DashboardRecommendationHelpers.ResolveDailyCheckInQuickPath(
+            hasActiveGoal: true,
+            currentPlanId: Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            currentPlanWeekStart: new DateOnly(2026, 05, 18),
+            nextSessionDate: new DateOnly(2026, 05, 24),
+            today: new DateOnly(2026, 05, 24));
+
+        await Assert.That(quickPath.Href).IsEqualTo("calendar");
+        await Assert.That(quickPath.Label).IsEqualTo("Log today's workout");
+    }
+
+    [Test]
+    public async Task ResolveDailyCheckInQuickPath_UsesProgressDeepLink_WhenNoCurrentDaySession()
+    {
+        var quickPath = DashboardRecommendationHelpers.ResolveDailyCheckInQuickPath(
+            hasActiveGoal: true,
+            currentPlanId: Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            currentPlanWeekStart: new DateOnly(2026, 05, 18),
+            nextSessionDate: new DateOnly(2026, 05, 27),
+            today: new DateOnly(2026, 05, 24));
+
+        await Assert.That(quickPath.Href).IsEqualTo("progress?planId=11111111-1111-1111-1111-111111111111&weekStart=2026-05-18");
+        await Assert.That(quickPath.Label).IsEqualTo("Continue weekly check-in");
+    }
 }

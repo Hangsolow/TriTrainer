@@ -21,6 +21,13 @@
 }
 else
 {
+    var quickPath = DashboardRecommendationHelpers.ResolveDailyCheckInQuickPath(
+        activeGoal is not null,
+        currentPlan?.Id,
+        currentPlan?.StartDate,
+        nextSession?.Date,
+        DateOnly.FromDateTime(DateTime.Today));
+
     <div class="tt-dashboard-kpis" aria-label="Dashboard highlights">
         <article class="tt-kpi-card">
             <p class="tt-kpi-label">Active plan</p>
@@ -35,6 +42,14 @@ else
             <p class="tt-kpi-value mb-0">@(nextSession is null ? "Not scheduled" : $"{DisciplineIcon(nextSession.Discipline)} {nextSession.Discipline} {nextSession.SessionType}")</p>
         </article>
     </div>
+
+    <section class="surface-card tt-checkin-quickpath" aria-label="Daily check-in quick path">
+        <div>
+            <h2 class="mb-1">Daily check-in</h2>
+            <p class="tt-section-note mb-0">@quickPath.Description</p>
+        </div>
+        <a class="btn btn-primary" href="@quickPath.Href">@quickPath.Label</a>
+    </section>
 
     <div class="grid-cards tt-dashboard-grid">
         <section class="surface-card tt-card-priority">

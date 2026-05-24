@@ -94,7 +94,7 @@ Key product pillars:
 | 3 | Progress and PR Tracking | Done (Conditional Pass) | Personal records, progress analytics, compliance dashboards, CI pipeline wiring, Playwright smoke CI lane, expanded regression coverage |
 | 4 | Release Gate Hardening | Done | Closed carry-over CI/Playwright evidence gates under policy, hardened startup-health regression confidence, and completed QA PASS closeout |
 | 5 | Athlete Experience Expansion | Done | Delivered recommendation insights, dashboard guidance, quick-start planning flow, and records usability improvements with QA PASS sign-off |
-| 6 | UX Acceleration | In Progress | Improve contextual recommendation navigation, dashboard readability, records interaction speed, and daily check-in UX |
+| 6 | UX Acceleration | Done (Conditional Pass Accepted) | Contextual recommendation navigation, dashboard readability improvements, records speed pass, and daily check-in quick path with full green automated/proxy QA evidence |
 
 ## 8. Current State (rewrite every sprint)
 
@@ -107,25 +107,31 @@ Key product pillars:
 - Sprint 6 Task 2 is delivered:
     - Dashboard information hierarchy is improved with a KPI strip, recommendation-first priority layout, and clearer section guidance text.
     - Weekly compliance summary uses semantic stat-list styling for faster scanability.
+- Sprint 6 Task 3 is delivered:
+    - Records interactions are faster through presets, defaults, and keyboard-friendly entry flow.
+- Sprint 6 Task 4 is delivered:
+    - Daily check-in quick path routes athletes to goals, plans, calendar logging, or progress deep-link based on current state.
 - CI policy remains stable: GitHub unit-only; integration and Playwright remain local trusted-machine lanes.
 - Current validation evidence is green:
     - `dotnet build TriTrainer.slnx` passes.
-    - `TriTrainer.Web.Tests` 41/41 pass.
+    - `TriTrainer.Web.Tests` 47/47 pass.
     - `TriTrainer.IntegrationTests` 19/19 pass.
-    - `TriTrainer.PlaywrightTests` 20/20 pass.
+    - `TriTrainer.PlaywrightTests` 23/23 pass.
+    - Aggregate: 89 passed, 0 failed, 0 skipped.
 - Sprint 5 QA sign-off artifact exists at `docs/qa/sprint-5-signoff.md` with PASS recommendation.
 - Sprint 6 QA acceptance matrix is active at `docs/qa/sprint-6-acceptance-matrix.md`.
+- Sprint 6 QA sign-off exists at `docs/qa/sprint-6-signoff.md` with CONDITIONAL PASS accepted per merge policy.
 
 **What does not work yet:**
 - Hosted GitHub runners still cannot reliably execute trusted integration/Playwright lanes under current self-signed certificate trust constraints.
-- Sprint 6 manual UX matrix checks (back/forward, mobile viewport, keyboard navigation) are not fully completed.
+- Direct human interactive UX checks (history/mobile/keyboard) are still pending in a headless-only QA environment.
 - Integration teardown still emits intermittent aborted-request exception noise in logs despite passing assertions.
 - Full authentication/authorization and production security model are not implemented.
 
 **What is next:**
-- Execute Sprint 6 Task 3: records workflow speed pass.
-- Execute Sprint 6 Task 4: reduced-friction daily check-in path.
-- Complete Task 5 by finishing manual QA matrix items and publishing sprint-6 QA sign-off and closeout artifacts.
+- Execute the documented human interactive UX pass and append evidence in QA artifacts.
+- Promote Sprint 6 QA recommendation from CONDITIONAL PASS to PASS if no blocker is found.
+- Proceed with regular merge workflow while retaining follow-up ownership tracking.
 
 ## 9. Security Rules
 

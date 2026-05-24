@@ -2,6 +2,8 @@ namespace TriTrainer.Web.Components.Pages;
 
 internal static class DashboardRecommendationHelpers
 {
+    internal readonly record struct DailyCheckInQuickPath(string Href, string Label, string Description);
+
     internal static IReadOnlyList<RecommendationInsight> InsightsOrEmpty(RecommendationInsightsResponse? recommendationInsights)
     {
         if (recommendationInsights?.Insights is null || recommendationInsights.Insights.Count == 0)
@@ -95,6 +97,43 @@ internal static class DashboardRecommendationHelpers
             >= 70 => "Needs a push",
             _ => "Needs attention"
         };
+    }
+
+    internal static DailyCheckInQuickPath ResolveDailyCheckInQuickPath(
+        bool hasActiveGoal,
+        Guid? currentPlanId,
+        DateOnly? currentPlanWeekStart,
+        DateOnly? nextSessionDate,
+        DateOnly today)
+    {
+        if (!hasActiveGoal)
+        {
+            return new DailyCheckInQuickPath(
+                "goals",
+                "Set today\'s goal",
+                "Start with a focused goal so your daily training actions stay on track.");
+        }
+
+        if (!currentPlanId.HasValue || !currentPlanWeekStart.HasValue)
+        {
+            return new DailyCheckInQuickPath(
+                "plans",
+                "Continue plan setup",
+                "Build your active plan to unlock a day-by-day training workflow.");
+        }
+
+        if (nextSessionDate.HasValue && nextSessionDate.Value <= today)
+        {
+            return new DailyCheckInQuickPath(
+                "calendar",
+                "Log today\'s workout",
+                "Open your calendar and quickly check off your current-day session.");
+        }
+
+        return new DailyCheckInQuickPath(
+            $"progress?planId={currentPlanId.Value}&weekStart={currentPlanWeekStart.Value:yyyy-MM-dd}",
+            "Continue weekly check-in",
+            "Review this week\'s progress and keep your plan momentum moving.");
     }
 
     private static string NormalizeSeverity(string? severity) =>

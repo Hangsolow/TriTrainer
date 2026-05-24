@@ -22,9 +22,9 @@ Secondary readiness prep:
 | Dashboard recommendation CTA | Plan-focused recommendation (`activate_plan`, `plan_next_session`, `next_session_gap`) | Navigates to `plans` | ✅ Validated by automated tests |
 | Dashboard recommendation CTA | Unknown/empty recommendation code | Safe fallback to `calendar` | ✅ Validated by automated tests |
 | Dashboard recommendation CTA | Missing context for progress-related code | Safe fallback to non-context route (no crash) | ✅ Validated by automated tests |
-| Manual UX | Browser back/forward after deep-link navigation | Navigation remains stable, no broken state | ⬜ Pending manual pass |
-| Manual UX | Mobile viewport tap targets and route results | CTA usability and route accuracy remain acceptable | ⬜ Pending manual pass |
-| Manual UX | Keyboard navigation/enter activation | Accessible CTA navigation works | ⬜ Pending manual pass |
+| Manual UX | Browser back/forward after deep-link navigation | Navigation remains stable, no broken state | ⚠ Proxy PASS (headless Playwright); interactive manual pass pending |
+| Manual UX | Mobile viewport tap targets and route results | CTA usability and route accuracy remain acceptable | ⚠ Proxy PASS (headless Playwright); interactive manual pass pending |
+| Manual UX | Keyboard navigation/enter activation | Accessible CTA navigation works | ⚠ Proxy PASS (headless Playwright); interactive manual pass pending |
 
 ## Regression Safety Baseline
 
@@ -63,3 +63,32 @@ Post-Task-3 execution refresh:
 
 Observed non-blocking watch item:
 - Integration teardown still emits intermittent aborted-request exception noise in logs during shutdown paths. Continue monitoring for flake risk.
+
+## Task 4 - Daily Check-in Quick Path
+
+| Area | Scenario | Expected Result | Status |
+|---|---|---|---|
+| Quick-path decision logic | No active goal | CTA routes to `goals` with clear setup label | ✅ Validated by automated tests |
+| Quick-path decision logic | Active goal but missing plan context | CTA routes to `plans` with setup continuation label | ✅ Validated by automated tests |
+| Quick-path decision logic | Session is due today or earlier | CTA routes to `calendar` for workout logging | ✅ Validated by automated tests |
+| Quick-path decision logic | Future session with active plan context | CTA deep-links to `progress?planId=<id>&weekStart=<yyyy-MM-dd>` | ✅ Validated by automated tests |
+| Regression safety | Full UI/API/distributed app gates | No failures across build + web + integration + playwright | ✅ Completed |
+| Manual UX | Browser back/forward after Daily check-in CTA navigation | Navigation state remains stable and predictable | ⚠ Proxy PASS (headless Playwright); interactive manual pass pending |
+| Manual UX | Mobile viewport tap target and readability of Daily check-in card | Control is discoverable and usable without mis-taps | ⚠ Proxy PASS (headless Playwright); interactive manual pass pending |
+| Manual UX | Keyboard tab order + Enter/Space activation on Daily check-in CTA | Accessible keyboard operation works end-to-end | ⚠ Proxy PASS (headless Playwright); interactive manual pass pending |
+
+## Execution Snapshot Refresh (2026-05-24)
+
+- Build: PASS via `dotnet build TriTrainer.slnx`
+- Web tests: PASS (47 passed, 0 failed, 0 skipped)
+- Integration tests: PASS (19 passed, 0 failed, 0 skipped)
+- Playwright tests: PASS (23 passed, 0 failed, 0 skipped)
+- Aggregate automated results: 89 passed, 0 failed, 0 skipped
+- Blocker verdict: no active blocker defects in automated coverage
+- QA recommendation status: CONDITIONAL PASS until direct interactive manual UX rows are completed by a human operator
+
+Manual-like UX proxy execution (2026-05-24):
+- PASS: `ManualLike_BackForward_StaysStable_AfterDashboardCtaNavigation`
+- PASS: `ManualLike_MobileViewport_CtasAreDiscoverableAndTapNavigates`
+- PASS: `ManualLike_Keyboard_TabTraversal_EnterActivation_WorksForKeyCtas`
+- Evidence: recommendation and daily check-in CTAs matched expected routes; browser history back/forward returned stable dashboard state; mobile tap navigation succeeded with non-zero tap targets; keyboard tab traversal reached CTAs and Enter activated navigation.

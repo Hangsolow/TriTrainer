@@ -142,6 +142,25 @@ h1:focus {
     align-items: start;
 }
 
+.tt-checkin-quickpath {
+    margin-bottom: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.tt-checkin-quickpath .btn {
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+    .tt-checkin-quickpath {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
 .tt-card-priority {
     grid-column: span 2;
 }
