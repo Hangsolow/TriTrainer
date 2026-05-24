@@ -45,7 +45,20 @@
 </section>
 
 <section class="surface-card">
-    <h2>Record List</h2>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h2 class="mb-0">Record Insights</h2>
+        <div class="tt-discipline-tabs" role="tablist" aria-label="Discipline filters">
+            @foreach (var tab in tabs)
+            {
+                <button class="btn btn-sm @(selectedTab == tab.Value ? "btn-primary" : "btn-outline-primary")"
+                        role="tab"
+                        aria-selected="@(selectedTab == tab.Value)"
+                        @onclick="() => SelectTab(tab.Value)">
+                    @tab.Label
+                </button>
+            }
+        </div>
+    </div>
 
     @if (isLoading)
     {
@@ -57,24 +70,80 @@
     }
     else
     {
+        <div class="row g-3 mb-3">
+            @foreach (var disciplineValue in Enum.GetValues<ActivityType>())
+            {
+                var best = GetBestCard(disciplineValue);
+                var trend = GetTrendRecords(disciplineValue);
+                <div class="col-lg-4">
+                    <article class="tt-pr-card">
+                        <h3>@DisciplineIcon(disciplineValue) @disciplineValue</h3>
+                        @if (best is null)
+                        {
+                            <p class="text-muted mb-1">No personal best yet.</p>
+                            <p class="text-muted mb-2">Add a record to start tracking.</p>
+                        }
+                        else
+                        {
+                            <p class="tt-pr-value mb-1">@best.Value</p>
+                            <p class="mb-1">@best.Metric</p>
+                            <p class="mb-2">@best.AchievedOn.ToString("yyyy-MM-dd")</p>
+                            <p class="tt-pr-note mb-2">@GetNotesSnippet(best)</p>
+                        }
+
+                        <div>
+                            <p class="tt-sparkline-label mb-1">Last 8 records</p>
+                            <svg class="tt-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none" aria-label="Trend for @disciplineValue">
+                                <polyline points="@GetSparklinePoints(trend)" />
+                            </svg>
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+
+        <h3 class="h5">Record List</h3>
+        var filteredRecords = SortedFilteredRecords().ToList();
+
         <div class="table-responsive">
             <table class="table table-sm align-middle">
                 <thead>
                     <tr>
                         <th>Discipline</th>
                         <th>Metric</th>
-                        <th>Value</th>
-                        <th>Date</th>
+                        <th>
+                            <button class="btn btn-link btn-sm p-0 tt-sort-btn" @onclick="() => SetSort(SortField.Value)">
+                                Value @SortIndicator(SortField.Value)
+                            </button>
+                        </th>
+                        <th>
+                            <button class="btn btn-link btn-sm p-0 tt-sort-btn" @onclick="() => SetSort(SortField.Date)">
+                                Date @SortIndicator(SortField.Date)
+                            </button>
+                        </th>
+                        <th>Badge</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var record in records)
+                    @foreach (var record in filteredRecords)
                     {
                         <tr>
                             <td>@record.Discipline</td>
                             <td>@record.Metric</td>
                             <td>@record.Value</td>
                             <td>@record.AchievedOn.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                @if (newRecordIds.Contains(record.Id))
+                                {
+                                    <span class="tt-pr-badge">New PR</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (filteredRecords.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-muted">No records in this discipline filter.</td>
                         </tr>
                     }
                 </tbody>
@@ -87,6 +156,22 @@
     private bool isLoading = true;
     private string? errorMessage;
     private List<PersonalRecord> records = [];
+    private List<PersonalRecord> personalBestRecords = [];
+    private readonly HashSet<Guid> newRecordIds = [];
+    private readonly Dictionary<Guid, string?> sourceActivityNotes = [];
+
+    private readonly (ActivityType? Value, string Label)[] tabs =
+    [
+        (null, "All"),
+        (ActivityType.Run, "Run"),
+        (ActivityType.Cycle, "Cycle"),
+        (ActivityType.Swim, "Swim")
+    ];
+
+    private ActivityType? selectedTab;
+
+    private SortField currentSort = SortField.Date;
+    private bool sortAscending;
 
     private ActivityType discipline = ActivityType.Run;
     private PersonalRecordMetric metric = PersonalRecordMetric.Fastest5k;
@@ -107,10 +192,24 @@
         try
         {
             records = await ApiClient.GetRecordsAsync();
+            personalBestRecords = await ApiClient.GetPersonalBestRecordsAsync();
+            await LoadNotesAsync();
         }
-        catch (Exception ex)
+        catch
         {
-            errorMessage = $"Failed to load records: {ex.Message}";
+            // Absorb brief startup/readiness blips before surfacing an error.
+            try
+            {
+                await Task.Delay(250);
+                records = await ApiClient.GetRecordsAsync();
+                personalBestRecords = await ApiClient.GetPersonalBestRecordsAsync();
+                await LoadNotesAsync();
+                errorMessage = null;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to load records: {ex.Message}";
+            }
         }
         finally
         {
@@ -132,12 +231,17 @@
 
         try
         {
-            await ApiClient.CreateRecordAsync(new CreatePersonalRecordRequest(
+            var created = await ApiClient.CreateRecordAsync(new CreatePersonalRecordRequest(
                 discipline,
                 metric,
                 recordValue,
                 achievedOn,
                 null));
+
+            if (created is not null)
+            {
+                newRecordIds.Add(created.Id);
+            }
 
             await LoadRecordsAsync();
         }
@@ -157,5 +261,130 @@
                 8,
                 DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
         }
+    }
+
+    private async Task LoadNotesAsync()
+    {
+        sourceActivityNotes.Clear();
+
+        var monthlyKeys = personalBestRecords
+            .Where(r => r.SourceActivityId.HasValue)
+            .Select(r => (Year: r.AchievedOn.Year, Month: r.AchievedOn.Month))
+            .Distinct()
+            .ToList();
+
+        foreach (var monthlyKey in monthlyKeys)
+        {
+            var activities = await ApiClient.GetActivitiesAsync(monthlyKey.Year, monthlyKey.Month);
+            foreach (var activity in activities)
+            {
+                sourceActivityNotes[activity.Id] = activity.Notes;
+            }
+        }
+    }
+
+    private void SelectTab(ActivityType? tab) => selectedTab = tab;
+
+    private IEnumerable<PersonalRecord> SortedFilteredRecords()
+    {
+        var filtered = selectedTab.HasValue
+            ? records.Where(r => r.Discipline == selectedTab.Value)
+            : records;
+
+        return (currentSort, sortAscending) switch
+        {
+            (SortField.Value, true) => filtered.OrderBy(r => r.Value).ThenByDescending(r => r.AchievedOn),
+            (SortField.Value, false) => filtered.OrderByDescending(r => r.Value).ThenByDescending(r => r.AchievedOn),
+            (SortField.Date, true) => filtered.OrderBy(r => r.AchievedOn).ThenByDescending(r => r.Value),
+            _ => filtered.OrderByDescending(r => r.AchievedOn).ThenByDescending(r => r.Value)
+        };
+    }
+
+    private void SetSort(SortField field)
+    {
+        if (currentSort == field)
+        {
+            sortAscending = !sortAscending;
+            return;
+        }
+
+        currentSort = field;
+        sortAscending = false;
+    }
+
+    private string SortIndicator(SortField field)
+    {
+        if (field != currentSort)
+        {
+            return "";
+        }
+
+        return sortAscending ? "↑" : "↓";
+    }
+
+    private PersonalRecord? GetBestCard(ActivityType disciplineValue) =>
+        personalBestRecords
+            .Where(r => r.Discipline == disciplineValue)
+            .OrderByDescending(r => r.AchievedOn)
+            .ThenByDescending(r => r.Value)
+            .FirstOrDefault();
+
+    private List<PersonalRecord> GetTrendRecords(ActivityType disciplineValue) =>
+        records
+            .Where(r => r.Discipline == disciplineValue)
+            .OrderByDescending(r => r.AchievedOn)
+            .Take(8)
+            .OrderBy(r => r.AchievedOn)
+            .ToList();
+
+    private string GetSparklinePoints(List<PersonalRecord> trend)
+    {
+        if (trend.Count == 0)
+        {
+            return "0,30 100,30";
+        }
+
+        var minValue = trend.Min(t => t.Value);
+        var maxValue = trend.Max(t => t.Value);
+        var spread = maxValue - minValue;
+
+        return string.Join(" ", trend.Select((item, index) =>
+        {
+            var x = trend.Count == 1 ? 50 : (decimal)index / (trend.Count - 1) * 100;
+            var ratio = spread == 0 ? 0.5m : (item.Value - minValue) / spread;
+            var y = 30 - (ratio * 30);
+            return $"{x:0.##},{y:0.##}";
+        }));
+    }
+
+    private string DisciplineIcon(ActivityType disciplineValue) => disciplineValue switch
+    {
+        ActivityType.Run => "🏃",
+        ActivityType.Cycle => "🚴",
+        ActivityType.Swim => "🏊",
+        _ => ""
+    };
+
+    private string GetNotesSnippet(PersonalRecord record)
+    {
+        if (!record.SourceActivityId.HasValue)
+        {
+            return "Notes: no linked activity.";
+        }
+
+        if (!sourceActivityNotes.TryGetValue(record.SourceActivityId.Value, out var note) || string.IsNullOrWhiteSpace(note))
+        {
+            return "Notes: none available.";
+        }
+
+        var trimmed = note.Trim();
+        var snippet = trimmed.Length > 48 ? $"{trimmed[..48]}..." : trimmed;
+        return $"Notes: {snippet}";
+    }
+
+    private enum SortField
+    {
+        Date,
+        Value
     }
 }

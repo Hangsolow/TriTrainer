@@ -77,6 +77,10 @@ public record WeeklyProgressTotals(int PlannedMinutes, int CompletedMinutes, dec
 
 public record WeeklyProgressResponse(Guid PlanId, DateOnly WeekStartDate, List<WeeklyProgressDiscipline> Disciplines, WeeklyProgressTotals Totals);
 
+public record WeeklyComplianceSummary(DateOnly WeekStartDate, int PlannedMinutes, int CompletedMinutes, decimal CompliancePercent);
+
+public record ProgressSummaryResponse(Guid PlanId, List<WeeklyComplianceSummary> WeeksSummary, decimal OverallCompliancePercent, int CurrentStreakWeeks, int LongestStreakWeeks);
+
 public record PersonalRecord(Guid Id, Guid AthleteId, ActivityType Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
 
 public record CreatePersonalRecordRequest(ActivityType Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
@@ -214,6 +218,37 @@ public class ActivityApiClient(HttpClient httpClient)
         response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<List<PersonalRecord>>(cancellationToken);
         return result ?? [];
+    }
+
+    public async Task<List<PersonalRecord>> GetPersonalBestRecordsAsync(ActivityType? discipline = null, CancellationToken cancellationToken = default)
+    {
+        var path = discipline.HasValue ? $"/v1/records/personal-best?discipline={discipline.Value}" : "/v1/records/personal-best";
+        var response = await httpClient.GetAsync(path, cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            return [];
+        }
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<List<PersonalRecord>>(cancellationToken);
+        return result ?? [];
+    }
+
+    public async Task<ProgressSummaryResponse?> GetProgressSummaryAsync(int weeks = 4, CancellationToken cancellationToken = default)
+    {
+        var response = await httpClient.GetAsync($"/v1/progress/summary?weeks={weeks}", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<ProgressSummaryResponse>(cancellationToken);
     }
 
     public async Task<PersonalRecord?> CreateRecordAsync(CreatePersonalRecordRequest request, CancellationToken cancellationToken = default)

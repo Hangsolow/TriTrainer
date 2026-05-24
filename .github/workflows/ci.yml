@@ -1,0 +1,99 @@
+# TriTrainer CI
+# Runs on every push to main/feature-sprint branch and PRs to main.
+#
+# Policy decision (2026-05-24): GitHub-hosted runners execute UNIT TESTS ONLY.
+# Integration and Playwright lanes require local developer-machine execution
+# because the hosted environment cannot trust this project's self-signed cert chain.
+#
+# TUnit notes:
+#   All TUnit test projects use OutputType=Exe and must be run with `dotnet run`, NOT `dotnet test`.
+#   Args after `--` are forwarded to the MTP test runner (e.g. --report-trx).
+
+name: CI
+
+on:
+  push:
+    branches: [main, feature/sprint-4]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  # Build + Unit Tests only (GitHub CI policy)
+  unit-tests:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore TriTrainer.slnx
+
+      - name: Build solution
+        run: dotnet build TriTrainer.slnx --configuration Release --no-restore
+
+      - name: Run ApiService.Tests
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.ApiService.Tests/TriTrainer.ApiService.Tests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/unit/apiservice"
+
+      - name: Run Web.Tests
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.Web.Tests/TriTrainer.Web.Tests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/unit/web"
+
+      - name: Run ServiceDefaults.Tests
+        run: >-
+          dotnet run
+          --project tests/TriTrainer.ServiceDefaults.Tests/TriTrainer.ServiceDefaults.Tests.csproj
+          --configuration Release
+          --no-build
+          --
+          --report-trx
+          --results-directory "${{ github.workspace }}/TestResults/unit/servicedefaults"
+
+      - name: Write unit lane evidence manifest
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "${{ github.workspace }}/TestResults/ledger"
+          {
+            echo "lane=unit"
+            echo "run_id=${{ github.run_id }}"
+            echo "run_attempt=${{ github.run_attempt }}"
+            echo "commit_sha=${{ github.sha }}"
+            echo "ref=${{ github.ref }}"
+          } > "${{ github.workspace }}/TestResults/ledger/unit-manifest.txt"
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-${{ github.run_id }}-${{ github.run_attempt }}-unit
+          path: |
+            TestResults/unit/
+            TestResults/ledger/unit-manifest.txt
+          if-no-files-found: error
+          retention-days: 14

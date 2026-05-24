@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- TUnit0015: Missing TimeoutAttribute cancellation token parameter — suppressed; Playwright tests
+         manage their own timeouts via PlaywrightOptions and do not require TUnit cancellation injection. -->
+    <NoWarn>$(NoWarn);TUnit0015</NoWarn>
     <!--
       Playwright smoke tests require the full Aspire stack to be running.
       Run with: dotnet run - -project tests/TriTrainer.PlaywrightTests/TriTrainer.PlaywrightTests.csproj

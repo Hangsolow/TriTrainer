@@ -76,6 +76,63 @@ else
                 <p class="mb-0"><strong>Compliance:</strong> @weeklyProgress.Totals.CompliancePercent%</p>
             }
         </section>
+
+        <section class="surface-card">
+            <h2>Rolling 4-Week Compliance</h2>
+            @if (progressSummary is null || progressSummary.WeeksSummary.Count == 0)
+            {
+                <p class="text-muted">No compliance summary available.</p>
+            }
+            else
+            {
+                <div class="tt-compliance-chart" role="img" aria-label="4 week compliance chart">
+                    @foreach (var week in progressSummary.WeeksSummary)
+                    {
+                        var height = Math.Clamp((double)week.CompliancePercent, 0, 100);
+                        <div class="tt-compliance-col">
+                            <div class="tt-compliance-bar @ComplianceBarClass(week.CompliancePercent)" style="height:@height%"></div>
+                            <span class="tt-compliance-week">@week.WeekStartDate.ToString("MM/dd")</span>
+                        </div>
+                    }
+                </div>
+                <p class="mb-0 mt-2"><strong>Overall:</strong> @progressSummary.OverallCompliancePercent%</p>
+            }
+        </section>
+
+        <section class="surface-card">
+            <h2>Streaks</h2>
+            @if (progressSummary is null)
+            {
+                <p class="text-muted">No streak data yet.</p>
+            }
+            else
+            {
+                <div class="tt-streak-grid">
+                    <div>
+                        <p class="mb-1 text-muted">Current</p>
+                        <p class="tt-streak-value mb-0">@progressSummary.CurrentStreakWeeks weeks</p>
+                    </div>
+                    <div>
+                        <p class="mb-1 text-muted">Longest</p>
+                        <p class="tt-streak-value mb-0">@progressSummary.LongestStreakWeeks weeks</p>
+                    </div>
+                </div>
+            }
+        </section>
+
+        <section class="surface-card">
+            <h2>Next Planned Session</h2>
+            @if (nextSession is null)
+            {
+                <p class="text-muted">No upcoming session found in the current plan.</p>
+            }
+            else
+            {
+                <p class="mb-1"><strong>@DisciplineIcon(nextSession.Discipline) @nextSession.Discipline</strong></p>
+                <p class="mb-1">@nextSession.SessionType on @nextSession.Date.ToString("dddd")</p>
+                <p class="mb-0">@nextSession.PlannedDurationMinutes minutes</p>
+            }
+        </section>
     </div>
 }
 
@@ -87,6 +144,8 @@ else
     private Goal? activeGoal;
     private PlanSummary? currentPlan;
     private WeeklyProgressResponse? weeklyProgress;
+    private ProgressSummaryResponse? progressSummary;
+    private NextSessionViewModel? nextSession;
 
     protected override async Task OnInitializedAsync()
     {
@@ -109,6 +168,10 @@ else
             if (currentPlan is not null)
             {
                 weeklyProgress = await ApiClient.GetWeeklyProgressAsync(currentPlan.Id, currentPlan.StartDate);
+                progressSummary = await ApiClient.GetProgressSummaryAsync(4);
+
+                var planDetail = await ApiClient.GetPlanAsync(currentPlan.Id);
+                nextSession = BuildNextSession(planDetail);
             }
         }
         catch (Exception ex)
@@ -134,4 +197,39 @@ else
             8,
             DateOnly.FromDateTime(DateTime.Today).AddDays(120)));
     }
+
+    private static string ComplianceBarClass(decimal pct) =>
+        pct >= 90 ? "tt-progress-high" : pct >= 70 ? "tt-progress-mid" : "tt-progress-low";
+
+    private static string DisciplineIcon(ActivityType discipline) => discipline switch
+    {
+        ActivityType.Run => "🏃",
+        ActivityType.Cycle => "🚴",
+        ActivityType.Swim => "🏊",
+        _ => ""
+    };
+
+    private static NextSessionViewModel? BuildNextSession(PlanDetail? plan)
+    {
+        if (plan is null)
+        {
+            return null;
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+
+        return plan.Weeks
+            .SelectMany(week => week.Sessions.Select(session =>
+            {
+                var offset = ((int)session.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+                var sessionDate = week.WeekStartDate.AddDays(offset);
+                return new NextSessionViewModel(session.Discipline, session.SessionType, sessionDate, session.PlannedDurationMinutes);
+            }))
+            .Where(s => s.Date >= today)
+            .OrderBy(s => s.Date)
+            .ThenBy(s => s.Discipline)
+            .FirstOrDefault();
+    }
+
+    private sealed record NextSessionViewModel(ActivityType Discipline, SessionType SessionType, DateOnly Date, int PlannedDurationMinutes);
 }
