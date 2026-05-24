@@ -1,6 +1,6 @@
 # PROJECT_BRIEF.md - TriTrainer
 
-> Last updated: 2026-05-24 | Sprint 5 | Status: Done (Ready to Merge)
+> Last updated: 2026-05-24 | Sprint 6 | Status: In Progress
 
 ## 1. Project Overview
 
@@ -93,38 +93,39 @@ Key product pillars:
 | 2 | Plan and Goals Core | Done | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
 | 3 | Progress and PR Tracking | Done (Conditional Pass) | Personal records, progress analytics, compliance dashboards, CI pipeline wiring, Playwright smoke CI lane, expanded regression coverage |
 | 4 | Release Gate Hardening | Done | Closed carry-over CI/Playwright evidence gates under policy, hardened startup-health regression confidence, and completed QA PASS closeout |
-| 5 | Athlete Experience Expansion | Done (Ready to Merge) | Delivered recommendation insights, dashboard guidance, quick-start planning flow, and records usability improvements with QA PASS sign-off |
+| 5 | Athlete Experience Expansion | Done | Delivered recommendation insights, dashboard guidance, quick-start planning flow, and records usability improvements with QA PASS sign-off |
+| 6 | UX Acceleration | In Progress | Improve contextual recommendation navigation, dashboard readability, records interaction speed, and daily check-in UX |
 
 ## 8. Current State (rewrite every sprint)
 
 **What works:**
 - Aspire AppHost orchestrates web, api, and postgres locally with stable startup-health checks.
 - API supports activity CRUD and expanded `/v1` domain contracts for profile, goals, plans, progress, records, and recommendation insights.
-- Sprint 5 delivered recommendation guidance end-to-end:
-    - `GET /v1/recommendations/insights` returns actionable items from compliance, streak, and next-session signals.
-    - Dashboard renders recommendation cards with severity badges and CTA actions.
-    - Dashboard fallbacks are hardened for null/empty insights and unknown recommendation metadata.
-- Sprint 5 delivered goal/plan quick-start UX and backend reliability:
-    - New atomic endpoint `POST /v1/goals/quick-start` creates active goal and starter plan in one operation.
-    - Goals UI now supports reduced-friction quick-start defaults and clearer validation/messaging.
-- Sprint 5 delivered records usability improvements:
-    - Filter/sort summary clarity, reset affordances, empty-state guidance, and row-level `Reuse` quick action.
+- Sprint 6 Task 1 is delivered:
+    - Recommendation CTAs now deep-link progress-focused guidance with `planId` and `weekStart` context when available.
+    - Backward-compatible fallback routing remains in place for missing/unknown recommendation metadata.
+- Sprint 6 Task 2 is delivered:
+    - Dashboard information hierarchy is improved with a KPI strip, recommendation-first priority layout, and clearer section guidance text.
+    - Weekly compliance summary uses semantic stat-list styling for faster scanability.
 - CI policy remains stable: GitHub unit-only; integration and Playwright remain local trusted-machine lanes.
 - Current validation evidence is green:
     - `dotnet build TriTrainer.slnx` passes.
-    - `TriTrainer.Web.Tests` 34/34 pass.
+    - `TriTrainer.Web.Tests` 41/41 pass.
     - `TriTrainer.IntegrationTests` 19/19 pass.
+    - `TriTrainer.PlaywrightTests` 20/20 pass.
 - Sprint 5 QA sign-off artifact exists at `docs/qa/sprint-5-signoff.md` with PASS recommendation.
+- Sprint 6 QA acceptance matrix is active at `docs/qa/sprint-6-acceptance-matrix.md`.
 
 **What does not work yet:**
 - Hosted GitHub runners still cannot reliably execute trusted integration/Playwright lanes under current self-signed certificate trust constraints.
-- Recommendation CTA links are page-level and not yet deep-linked with plan/week context.
+- Sprint 6 manual UX matrix checks (back/forward, mobile viewport, keyboard navigation) are not fully completed.
+- Integration teardown still emits intermittent aborted-request exception noise in logs despite passing assertions.
 - Full authentication/authorization and production security model are not implemented.
 
 **What is next:**
-- Confirm post-merge smoke confidence on `main` for recommendation, quick-start, and records flows.
-- Start Sprint 6 planning and kickoff artifacts based on updated backlog priorities.
-- Carry forward accepted follow-up items (for example recommendation CTA deep-linking context) into Sprint 6 prioritization.
+- Execute Sprint 6 Task 3: records workflow speed pass.
+- Execute Sprint 6 Task 4: reduced-friction daily check-in path.
+- Complete Task 5 by finishing manual QA matrix items and publishing sprint-6 QA sign-off and closeout artifacts.
 
 ## 9. Security Rules
 
@@ -170,7 +171,7 @@ Target deployment model:
 6. Run smoke tests against deployed endpoints.
 
 Immediate action item:
-- Run Sprint 5 producer checkpoint cadence and lock day-1 feature acceptance criteria in `docs/sprint-5/progress.md`.
+- Run Sprint 6 producer checkpoint cadence and lock day-1 UX acceptance criteria in `docs/sprint-6/progress.md`.
 
 ## 12. Cross-Chat Handoff Protocol
 
