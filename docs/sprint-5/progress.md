@@ -30,9 +30,7 @@
 
 ## Blockers
 
-| Date | Blocker | Owner | ETA | Escalation Path |
-|---|---|---|---|---|
-| 2026-05-24 | PR creation could not be executed from chat runtime due missing command execution for `gh`; requires local terminal run | Producer | Same day | Run `gh pr create --base main --head feature/sprint-5 --title "Sprint 5: Athlete Experience Expansion" --body-file docs/sprint-5/pr-handoff.md`; escalate to DevOps if GitHub auth fails |
+_None active. PR has been created and sprint is in review/handoff mode._
 
 ## Notes
 
@@ -40,6 +38,7 @@
 - Sprint focus is feature delivery (recommendations, dashboard UX, goal/plan flow, records usability), not gate operations work.
 - GitHub CI unit-only policy remains unchanged in background but is not a Sprint 5 feature objective.
 - PR handoff package prepared in `docs/sprint-5/pr-handoff.md` for merge review.
+- PR from `feature/sprint-5` to `main` has been created.
 
 ## Producer Checkpoint Template
 
@@ -75,6 +74,6 @@ Status: on-track
 
 ### Next 24h Focus
 
-1. Producer: open PR from feature/sprint-5 to main with Sprint 5 evidence summary.
-2. QA: perform final exploratory pass on recommendation CTA navigation context before merge approval.
-3. Dev: address any PR review comments and keep branch green until merge.
+1. QA: perform final exploratory pass on recommendation CTA navigation context before merge approval.
+2. Dev: address PR review comments and keep branch green until merge.
+3. Producer: complete final approval and merge to `main` using regular merge strategy.
