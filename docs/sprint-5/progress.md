@@ -39,6 +39,7 @@ _None active. PR has been created and sprint is in review/handoff mode._
 - GitHub CI unit-only policy remains unchanged in background but is not a Sprint 5 feature objective.
 - PR handoff package prepared in `docs/sprint-5/pr-handoff.md` for merge review.
 - PR from `feature/sprint-5` to `main` has been created.
+- Final QA rerun checkpoint completed: build PASS, Web tests PASS (34/34), Integration tests PASS (19/19).
 
 ## Producer Checkpoint Template
 
