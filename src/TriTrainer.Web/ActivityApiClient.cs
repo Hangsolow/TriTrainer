@@ -57,6 +57,12 @@ public record Goal(Guid Id, Guid AthleteId, GoalType GoalType, ActivityType? Dis
 
 public record CreateGoalRequest(GoalType GoalType, ActivityType? Discipline, decimal? TargetValue, DateOnly TargetDate);
 
+public record CreateQuickStartGoalRequest(GoalType GoalType, ActivityType? Discipline, decimal? TargetValue, DateOnly TargetDate, string PlanName, DateOnly StartDate, int WeekCount, bool ActivatePlan);
+
+public record QuickStartPlan(Guid Id, Guid? GoalId, string Name, DateOnly StartDate, DateOnly EndDate, PlanStatus Status, int WeekCount, int SessionCount);
+
+public record QuickStartGoalResponse(Goal Goal, QuickStartPlan Plan);
+
 public record UpdateGoalStatusRequest(GoalStatus Status);
 
 public record PlanSummary(Guid Id, Guid? GoalId, string Name, DateOnly StartDate, DateOnly EndDate, PlanStatus Status);
@@ -80,6 +86,12 @@ public record WeeklyProgressResponse(Guid PlanId, DateOnly WeekStartDate, List<W
 public record WeeklyComplianceSummary(DateOnly WeekStartDate, int PlannedMinutes, int CompletedMinutes, decimal CompliancePercent);
 
 public record ProgressSummaryResponse(Guid PlanId, List<WeeklyComplianceSummary> WeeksSummary, decimal OverallCompliancePercent, int CurrentStreakWeeks, int LongestStreakWeeks);
+
+public record RecommendationInsight(string Code, string Title, string Message, string Severity, string Action);
+
+public record NextPlannedSession(DateOnly Date, ActivityType Discipline, SessionType SessionType, int PlannedDurationMinutes);
+
+public record RecommendationInsightsResponse(Guid? PlanId, int WeeksEvaluated, decimal OverallCompliancePercent, int CurrentStreakWeeks, NextPlannedSession? NextPlannedSession, List<RecommendationInsight> Insights);
 
 public record PersonalRecord(Guid Id, Guid AthleteId, ActivityType Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
 
@@ -145,6 +157,13 @@ public class ActivityApiClient(HttpClient httpClient)
         var response = await httpClient.PostAsJsonAsync("/v1/goals", request, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Goal>(cancellationToken);
+    }
+
+    public async Task<QuickStartGoalResponse?> CreateQuickStartGoalAsync(CreateQuickStartGoalRequest request, CancellationToken cancellationToken = default)
+    {
+        var response = await httpClient.PostAsJsonAsync("/v1/goals/quick-start", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<QuickStartGoalResponse>(cancellationToken);
     }
 
     public async Task<Goal?> UpdateGoalStatusAsync(Guid goalId, GoalStatus status, CancellationToken cancellationToken = default)
@@ -249,6 +268,18 @@ public class ActivityApiClient(HttpClient httpClient)
 
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<ProgressSummaryResponse>(cancellationToken);
+    }
+
+    public async Task<RecommendationInsightsResponse?> GetRecommendationInsightsAsync(int weeks = 4, CancellationToken cancellationToken = default)
+    {
+        var response = await httpClient.GetAsync($"/v1/recommendations/insights?weeks={weeks}", cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<RecommendationInsightsResponse>(cancellationToken);
     }
 
     public async Task<PersonalRecord?> CreateRecordAsync(CreatePersonalRecordRequest request, CancellationToken cancellationToken = default)

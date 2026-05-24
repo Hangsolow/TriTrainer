@@ -273,6 +273,123 @@ v1.MapPatch("/goals/{goalId:guid}/status", async (Guid goalId, UpdateGoalStatusR
 })
 .WithName("UpdateGoalStatus");
 
+v1.MapPost("/goals/quick-start", async (CreateQuickStartGoalRequest request, ActivitiesDbContext db) =>
+{
+    var athlete = await db.AthleteProfiles.FirstOrDefaultAsync();
+    if (athlete is null)
+    {
+        return Results.BadRequest("Athlete profile is required before creating goals.");
+    }
+
+    if (request.TargetDate <= DateOnly.FromDateTime(DateTime.UtcNow.Date))
+    {
+        return Results.BadRequest("TargetDate must be in the future.");
+    }
+
+    if (request.Discipline is null && request.GoalType == GoalType.DisciplinePerformance)
+    {
+        return Results.BadRequest("Discipline is required for DisciplinePerformance goals.");
+    }
+
+    if (request.GoalType == GoalType.DisciplinePerformance && (request.TargetValue is null or <= 0))
+    {
+        return Results.BadRequest("TargetValue is required and must be greater than 0 for DisciplinePerformance goals.");
+    }
+
+    var conflictingGoal = await db.Goals.AnyAsync(g =>
+        g.AthleteId == athlete.Id &&
+        g.GoalType == request.GoalType &&
+        g.Status == GoalStatus.Active);
+
+    if (conflictingGoal)
+    {
+        return Results.Conflict("Only one active goal per goal type is allowed.");
+    }
+
+    if (string.IsNullOrWhiteSpace(request.PlanName) || request.PlanName.Length > 120)
+    {
+        return Results.BadRequest("PlanName is required and must be at most 120 characters.");
+    }
+
+    if (request.WeekCount is < 4 or > 16)
+    {
+        return Results.BadRequest("WeekCount must be between 4 and 16.");
+    }
+
+    if (request.StartDate < DateOnly.FromDateTime(DateTime.UtcNow.Date))
+    {
+        return Results.BadRequest("StartDate cannot be in the past.");
+    }
+
+    var endDate = request.StartDate.AddDays((request.WeekCount * 7) - 1);
+    if (endDate > request.TargetDate)
+    {
+        return Results.BadRequest("Plan end date must be on or before goal target date.");
+    }
+
+    var goal = new Goal
+    {
+        AthleteId = athlete.Id,
+        GoalType = request.GoalType,
+        Discipline = request.Discipline,
+        TargetValue = request.TargetValue,
+        TargetDate = request.TargetDate,
+        Status = GoalStatus.Active
+    };
+
+    var plan = new TrainingPlan
+    {
+        AthleteId = athlete.Id,
+        GoalId = goal.Id,
+        Name = request.PlanName.Trim(),
+        StartDate = request.StartDate,
+        EndDate = endDate,
+        Status = request.ActivatePlan ? PlanStatus.Active : PlanStatus.Draft
+    };
+
+    for (var i = 0; i < request.WeekCount; i++)
+    {
+        plan.Weeks.Add(new PlanWeek
+        {
+            WeekIndex = i + 1,
+            WeekStartDate = request.StartDate.AddDays(i * 7)
+        });
+    }
+
+    var generatedSessions = PlanGenerationService.GenerateSessions(plan, goal, athlete);
+    foreach (var session in generatedSessions)
+    {
+        var targetWeek = plan.Weeks.First(w => w.Id == session.PlanWeekId);
+        targetWeek.Sessions.Add(session);
+    }
+
+    db.Goals.Add(goal);
+    db.TrainingPlans.Add(plan);
+
+    await db.SaveChangesAsync();
+
+    return Results.Created($"/v1/goals/{goal.Id}", new QuickStartGoalResponse(
+        new GoalResponse(
+            goal.Id,
+            goal.AthleteId,
+            goal.GoalType,
+            goal.Discipline,
+            goal.TargetValue,
+            goal.TargetDate,
+            goal.Status,
+            goal.CreatedAtUtc),
+        new QuickStartPlanResponse(
+            plan.Id,
+            plan.GoalId,
+            plan.Name,
+            plan.StartDate,
+            plan.EndDate,
+            plan.Status,
+            plan.Weeks.Count,
+            plan.Weeks.Sum(w => w.Sessions.Count))));
+})
+.WithName("CreateQuickStartGoal");
+
 v1.MapPost("/plans", async (CreatePlanRequest request, ActivitiesDbContext db) =>
 {
     var athlete = await db.AthleteProfiles.FirstOrDefaultAsync();
@@ -637,6 +754,180 @@ v1.MapGet("/progress/summary", async (int? weeks, ActivitiesDbContext db) =>
 })
 .WithName("GetProgressSummary");
 
+v1.MapGet("/recommendations/insights", async (int? weeks, ActivitiesDbContext db) =>
+{
+    var weekCount = weeks ?? 4;
+    if (weekCount is < 1 or > 12)
+    {
+        return Results.BadRequest("weeks must be between 1 and 12.");
+    }
+
+    var athlete = await db.AthleteProfiles.AsNoTracking().FirstOrDefaultAsync();
+    if (athlete is null)
+    {
+        return Results.BadRequest("Athlete profile is required before querying recommendation insights.");
+    }
+
+    var activePlan = await db.TrainingPlans
+        .AsNoTracking()
+        .Include(p => p.Weeks)
+        .ThenInclude(w => w.Sessions)
+        .Where(p => p.AthleteId == athlete.Id && p.Status == PlanStatus.Active)
+        .OrderByDescending(p => p.CreatedAtUtc)
+        .FirstOrDefaultAsync();
+
+    if (activePlan is null)
+    {
+        return Results.Ok(new RecommendationInsightsResponse(
+            null,
+            weekCount,
+            0,
+            0,
+            null,
+            [
+                new RecommendationInsightResponse(
+                    "activate_plan",
+                    "Activate a training plan",
+                    "You will get personalized guidance once an active plan is available.",
+                    "medium",
+                    "Create or activate a plan from the Plans page.")
+            ]));
+    }
+
+    var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+    var daysSinceMonday = ((int)today.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+    var currentWeekStart = today.AddDays(-daysSinceMonday);
+    var mostRecentCompletedWeekStart = currentWeekStart.AddDays(-7);
+
+    var weekStarts = Enumerable.Range(0, weekCount)
+        .Select(offset => mostRecentCompletedWeekStart.AddDays(-(weekCount - 1 - offset) * 7))
+        .ToList();
+
+    var completedActivities = await db.Activities
+        .AsNoTracking()
+        .Where(a => a.Date >= weekStarts.First() && a.Date <= weekStarts.Last().AddDays(6))
+        .ToListAsync();
+
+    var weeklyCompliance = weekStarts
+        .Select(weekStartDate =>
+        {
+            var weekEndDate = weekStartDate.AddDays(6);
+            var matchingWeek = activePlan.Weeks.FirstOrDefault(w => w.WeekStartDate == weekStartDate);
+
+            var plannedMinutes = matchingWeek?.Sessions.Sum(s => s.PlannedDurationMinutes) ?? 0;
+            var completedMinutes = completedActivities
+                .Where(a => a.Date >= weekStartDate && a.Date <= weekEndDate)
+                .Sum(a => a.DurationMinutes);
+
+            return plannedMinutes == 0
+                ? 0
+                : decimal.Round((decimal)completedMinutes / plannedMinutes * 100, 2);
+        })
+        .ToList();
+
+    var totalPlannedMinutes = weekStarts.Sum(weekStartDate =>
+        activePlan.Weeks
+            .Where(w => w.WeekStartDate == weekStartDate)
+            .SelectMany(w => w.Sessions)
+            .Sum(s => s.PlannedDurationMinutes));
+
+    var totalCompletedMinutes = completedActivities.Sum(a => a.DurationMinutes);
+    var overallCompliancePercent = totalPlannedMinutes == 0
+        ? 0
+        : decimal.Round((decimal)totalCompletedMinutes / totalPlannedMinutes * 100, 2);
+
+    var currentStreakWeeks = 0;
+    for (var i = weeklyCompliance.Count - 1; i >= 0; i--)
+    {
+        if (weeklyCompliance[i] < 70)
+        {
+            break;
+        }
+
+        currentStreakWeeks++;
+    }
+
+    var nextSession = activePlan.Weeks
+        .SelectMany(week => week.Sessions.Select(session =>
+        {
+            var offset = ((int)session.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+            var sessionDate = week.WeekStartDate.AddDays(offset);
+            return new NextPlannedSessionResponse(sessionDate, session.Discipline, session.SessionType, session.PlannedDurationMinutes);
+        }))
+        .Where(s => s.Date >= today)
+        .OrderBy(s => s.Date)
+        .ThenBy(s => s.Discipline)
+        .FirstOrDefault();
+
+    var insights = new List<RecommendationInsightResponse>();
+
+    if (overallCompliancePercent < 60)
+    {
+        insights.Add(new RecommendationInsightResponse(
+            "consistency_recovery",
+            "Recover consistency this week",
+            "Recent completion is below target. Focus on two short sessions to rebuild momentum.",
+            "high",
+            "Complete at least two planned sessions before the weekend."));
+    }
+    else if (overallCompliancePercent < 85)
+    {
+        insights.Add(new RecommendationInsightResponse(
+            "consistency_build",
+            "Build consistency",
+            "You are close to target compliance. A steady week will move you into strong form.",
+            "medium",
+            "Prioritize your next key workout and one recovery session."));
+    }
+    else
+    {
+        insights.Add(new RecommendationInsightResponse(
+            "consistency_maintain",
+            "Maintain strong momentum",
+            "Great compliance trend. Keep current rhythm and avoid overloading.",
+            "low",
+            "Stick to planned durations and preserve recovery days."));
+    }
+
+    if (currentStreakWeeks >= 3)
+    {
+        insights.Add(new RecommendationInsightResponse(
+            "streak_keepalive",
+            "Protect your streak",
+            $"You are on a {currentStreakWeeks}-week streak above 70% compliance.",
+            "low",
+            "Schedule your next planned session early this week."));
+    }
+
+    if (nextSession is null)
+    {
+        insights.Add(new RecommendationInsightResponse(
+            "plan_next_session",
+            "No upcoming planned session",
+            "Your active plan has no upcoming session dates from today onward.",
+            "medium",
+            "Review your plan timeline and create or activate the next plan block."));
+    }
+    else if (nextSession.Date > today.AddDays(3))
+    {
+        insights.Add(new RecommendationInsightResponse(
+            "next_session_gap",
+            "Large gap before next session",
+            "There is a gap of more than three days before your next planned workout.",
+            "medium",
+            "Consider moving an easier session earlier to stay consistent."));
+    }
+
+    return Results.Ok(new RecommendationInsightsResponse(
+        activePlan.Id,
+        weekCount,
+        overallCompliancePercent,
+        currentStreakWeeks,
+        nextSession,
+        insights));
+})
+.WithName("GetRecommendationInsights");
+
 v1.MapGet("/records", async (ActivityType? discipline, ActivitiesDbContext db) =>
 {
     var athlete = await db.AthleteProfiles.AsNoTracking().FirstOrDefaultAsync();
@@ -775,6 +1066,7 @@ app.Run();
 record CreateActivityRequest(DateOnly Date, ActivityType Type, int DurationMinutes, string? Notes);
 record UpsertAthleteProfileRequest(string DisplayName, decimal WeeklyHoursAvailable, DateOnly? PrimaryEventDate);
 record CreateGoalRequest(GoalType GoalType, ActivityType? Discipline, decimal? TargetValue, DateOnly TargetDate);
+record CreateQuickStartGoalRequest(GoalType GoalType, ActivityType? Discipline, decimal? TargetValue, DateOnly TargetDate, string PlanName, DateOnly StartDate, int WeekCount, bool ActivatePlan);
 record UpdateGoalStatusRequest(GoalStatus Status);
 record CreatePlanRequest(Guid GoalId, string Name, DateOnly StartDate, int WeekCount);
 record UpdatePlanStatusRequest(PlanStatus Status);
@@ -782,10 +1074,15 @@ record CreatePersonalRecordRequest(ActivityType? Discipline, PersonalRecordMetri
 
 record AthleteProfileResponse(Guid Id, string DisplayName, decimal WeeklyHoursAvailable, DateOnly? PrimaryEventDate, DateTime CreatedAtUtc);
 record GoalResponse(Guid Id, Guid AthleteId, GoalType GoalType, ActivityType? Discipline, decimal? TargetValue, DateOnly TargetDate, GoalStatus Status, DateTime CreatedAtUtc);
+record QuickStartPlanResponse(Guid Id, Guid? GoalId, string Name, DateOnly StartDate, DateOnly EndDate, PlanStatus Status, int WeekCount, int SessionCount);
+record QuickStartGoalResponse(GoalResponse Goal, QuickStartPlanResponse Plan);
 record PlanDetailResponse(Guid Id, Guid AthleteId, Guid? GoalId, string Name, DateOnly StartDate, DateOnly EndDate, PlanStatus Status, DateTime CreatedAtUtc, List<PlanWeekResponse> Weeks);
 record PlanWeekResponse(Guid Id, Guid PlanId, int WeekIndex, DateOnly WeekStartDate, string? Notes, List<PlannedSessionResponse> Sessions);
 record PlannedSessionResponse(Guid Id, Guid PlanWeekId, ActivityType Discipline, SessionType SessionType, int PlannedDurationMinutes, decimal? PlannedDistanceKm, DayOfWeek DayOfWeek);
 record PersonalRecordResponse(Guid Id, Guid AthleteId, ActivityType Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
 record WeeklyComplianceSummaryResponse(DateOnly WeekStartDate, int PlannedMinutes, int CompletedMinutes, decimal CompliancePercent);
 record ProgressSummaryResponse(Guid PlanId, List<WeeklyComplianceSummaryResponse> WeeksSummary, decimal OverallCompliancePercent, int CurrentStreakWeeks, int LongestStreakWeeks);
+record RecommendationInsightResponse(string Code, string Title, string Message, string Severity, string Action);
+record NextPlannedSessionResponse(DateOnly Date, ActivityType Discipline, SessionType SessionType, int PlannedDurationMinutes);
+record RecommendationInsightsResponse(Guid? PlanId, int WeeksEvaluated, decimal OverallCompliancePercent, int CurrentStreakWeeks, NextPlannedSessionResponse? NextPlannedSession, List<RecommendationInsightResponse> Insights);
 

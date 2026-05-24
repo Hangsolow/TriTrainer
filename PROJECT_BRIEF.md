@@ -1,6 +1,6 @@
 # PROJECT_BRIEF.md - TriTrainer
 
-> Last updated: 2026-05-24 | Sprint 5 | Status: In Progress
+> Last updated: 2026-05-24 | Sprint 5 | Status: Done (Ready to Merge)
 
 ## 1. Project Overview
 
@@ -93,35 +93,38 @@ Key product pillars:
 | 2 | Plan and Goals Core | Done | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
 | 3 | Progress and PR Tracking | Done (Conditional Pass) | Personal records, progress analytics, compliance dashboards, CI pipeline wiring, Playwright smoke CI lane, expanded regression coverage |
 | 4 | Release Gate Hardening | Done | Closed carry-over CI/Playwright evidence gates under policy, hardened startup-health regression confidence, and completed QA PASS closeout |
-| 5 | CI Trust Remediation and Gate Operations | In Progress | Define hosted cert-trust remediation path, standardize local gate evidence, and operationalize repeatable integration/Playwright lane governance |
+| 5 | Athlete Experience Expansion | Done (Ready to Merge) | Delivered recommendation insights, dashboard guidance, quick-start planning flow, and records usability improvements with QA PASS sign-off |
 
 ## 8. Current State (rewrite every sprint)
 
 **What works:**
-- Aspire AppHost can orchestrate web, api, and postgres locally.
-- API supports activity CRUD for monthly calendar display.
-- API now exposes Sprint 1 `/v1` contracts for athlete profile, goals, plans, weekly progress, and personal records.
-- Blazor frontend uses dashboard-first navigation with dedicated Goals, Plans, Weekly Progress, and Records pages.
-- Existing activities flow remains available under `/calendar` as a support workflow.
-- Sprint 2 complete: deterministic plan generation templates (EventFinish, Consistency, DisciplinePerformance), status-transition guards for goals and plans, terminal-goal rejection on plan creation, and string-enum JSON deserialization fix restoring Sprint 1 activity CRUD.
-- Plans and Weekly Progress pages include session pills, status badges, Activate button, variance column, compliance colouring, and zero-row filtering.
-- Sprint 3 complete with conditional QA pass: records filtering and personal-best API hardening, progress summary/streak analytics, Records page enhancements, and dashboard compliance widgets.
-- CI workflow policy is now GitHub unit-only in `.github/workflows/ci.yml`; integration and Playwright execution are local-only on trusted developer machines due cert trust constraints.
-- Regression coverage expanded and green: 203/203 passing (137 API, 12 integration, 27 web, 27 service-defaults); 0 failed, 0 skipped.
-- QA sign-off artifact produced in `docs/qa/sprint-3-signoff.md` with CONDITIONAL PASS and no blocker defects.
-- Sprint 4 is closed with PASS: local Playwright smoke rerun passed 20/20, local integration rerun passed 15/15, and waiver `S4-PLAYWRIGHT-STRICT-WAIVER-001` is closed.
-- Sprint 4 closeout artifacts are complete in `docs/sprint-4/progress.md`, `docs/sprint-4/done.md`, and `docs/qa/sprint-4-signoff.md`.
-- Sprint 5 is active with kickoff artifacts in `docs/sprint-5/plan.md`, `docs/sprint-5/progress.md`, and `docs/sprint-5/producer-kickoff.md`.
+- Aspire AppHost orchestrates web, api, and postgres locally with stable startup-health checks.
+- API supports activity CRUD and expanded `/v1` domain contracts for profile, goals, plans, progress, records, and recommendation insights.
+- Sprint 5 delivered recommendation guidance end-to-end:
+    - `GET /v1/recommendations/insights` returns actionable items from compliance, streak, and next-session signals.
+    - Dashboard renders recommendation cards with severity badges and CTA actions.
+    - Dashboard fallbacks are hardened for null/empty insights and unknown recommendation metadata.
+- Sprint 5 delivered goal/plan quick-start UX and backend reliability:
+    - New atomic endpoint `POST /v1/goals/quick-start` creates active goal and starter plan in one operation.
+    - Goals UI now supports reduced-friction quick-start defaults and clearer validation/messaging.
+- Sprint 5 delivered records usability improvements:
+    - Filter/sort summary clarity, reset affordances, empty-state guidance, and row-level `Reuse` quick action.
+- CI policy remains stable: GitHub unit-only; integration and Playwright remain local trusted-machine lanes.
+- Current validation evidence is green:
+    - `dotnet build TriTrainer.slnx` passes.
+    - `TriTrainer.Web.Tests` 34/34 pass.
+    - `TriTrainer.IntegrationTests` 19/19 pass.
+- Sprint 5 QA sign-off artifact exists at `docs/qa/sprint-5-signoff.md` with PASS recommendation.
 
 **What does not work yet:**
-- Hosted GitHub runners still cannot run trusted integration/Playwright lanes against the current self-signed cert model.
-- No adaptive recommendation engine or automated plan optimization.
-- Security model and auth strategy not implemented.
+- Hosted GitHub runners still cannot reliably execute trusted integration/Playwright lanes under current self-signed certificate trust constraints.
+- Recommendation CTA links are page-level and not yet deep-linked with plan/week context.
+- Full authentication/authorization and production security model are not implemented.
 
 **What is next:**
-- Execute Sprint 5 Task 1-2 first: cert-trust remediation decision matrix and local evidence standardization.
-- Operationalize repeatable local integration/Playwright lane execution and artifact capture (Task 4).
-- Publish Sprint 5 QA governance package and merge recommendation after gate validation (Task 5).
+- Open and review PR for `feature/sprint-5` with Sprint 5 evidence package.
+- Merge Sprint 5 to `main` using regular merge after producer approval.
+- Plan next sprint scope (post-Sprint 5) for prioritized product value and any accepted follow-ups (for example CTA deep-linking context).
 
 ## 9. Security Rules
 
@@ -167,7 +170,7 @@ Target deployment model:
 6. Run smoke tests against deployed endpoints.
 
 Immediate action item:
-- Run Sprint 5 producer checkpoint cadence and lock day-1 decisions in `docs/sprint-5/progress.md`.
+- Run Sprint 5 producer checkpoint cadence and lock day-1 feature acceptance criteria in `docs/sprint-5/progress.md`.
 
 ## 12. Cross-Chat Handoff Protocol
 

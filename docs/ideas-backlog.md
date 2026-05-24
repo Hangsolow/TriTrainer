@@ -12,6 +12,7 @@
 - Cross-discipline load balancing visualization.
 - Mobile-first quick log flow for post-workout entry.
 - Large UI redesign exploration beyond current reliability/gate-hardening objectives (moved during Sprint 4 producer checkpoint on 2026-05-22).
+- Deep-link recommendation CTAs directly to relevant plan/week context to reduce navigation friction from dashboard insights (captured during Sprint 5 closeout on 2026-05-24).
 
 ## Technical Ideas
 - Introduce read-model projections for dashboard performance.

@@ -367,6 +367,99 @@ public class ProgressSummaryMixedStreakEdgeCaseTests(AppFixture fixture)
     }
 }
 
+[ClassDataSource<AppFixture>(Shared = SharedType.PerClass)]
+public class RecommendationInsightsApiTests(AppFixture fixture)
+{
+    [Test]
+    public async Task RecommendationInsights_WithActivePlan_ReturnsActionableInsights()
+    {
+        var client = fixture.CreateHttpClient("apiservice");
+        _ = await TestDataSeeder.CreateActivePlanForRecentWeeksAsync(client, "Recommendation Athlete", 4);
+
+        var response = await client.GetAsync("/v1/recommendations/insights?weeks=4");
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+
+        var payload = await response.Content.ReadFromJsonAsync<RecommendationInsightsResponse>();
+        await Assert.That(payload).IsNotNull();
+        await Assert.That(payload!.WeeksEvaluated).IsEqualTo(4);
+        await Assert.That(payload.Insights.Count).IsGreaterThan(0);
+        await Assert.That(payload.Insights.Any(i => i.Code == "consistency_recovery")).IsTrue();
+        await Assert.That(payload.Insights.Any(i => i.Code == "plan_next_session")).IsTrue();
+    }
+
+    [Test]
+    public async Task RecommendationInsights_WeeksBounds_AreEnforced()
+    {
+        var client = fixture.CreateHttpClient("apiservice");
+
+        var belowRange = await client.GetAsync("/v1/recommendations/insights?weeks=0");
+        await Assert.That(belowRange.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+
+        var aboveRange = await client.GetAsync("/v1/recommendations/insights?weeks=13");
+        await Assert.That(aboveRange.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+    }
+}
+
+[ClassDataSource<AppFixture>(Shared = SharedType.PerClass)]
+public class GoalQuickStartApiTests(AppFixture fixture)
+{
+    [Test]
+    public async Task CreateQuickStartGoal_CreatesActiveGoalAndPlanInSingleCall()
+    {
+        var client = fixture.CreateHttpClient("apiservice");
+        await TestDataSeeder.EnsureAthleteProfileAsync(client, "Quick Start Athlete");
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var startDate = today.AddDays(7);
+        var targetDate = startDate.AddDays(7 * 10);
+
+        var response = await client.PostAsJsonAsync("/v1/goals/quick-start", new
+        {
+            goalType = "EventFinish",
+            discipline = (string?)null,
+            targetValue = (decimal?)null,
+            targetDate = targetDate.ToString("yyyy-MM-dd"),
+            planName = "Quick Start Build",
+            startDate = startDate.ToString("yyyy-MM-dd"),
+            weekCount = 8,
+            activatePlan = true
+        });
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
+
+        var created = await response.Content.ReadFromJsonAsync<QuickStartGoalResponse>();
+        await Assert.That(created).IsNotNull();
+        await Assert.That(created!.Goal.Status).IsEqualTo("Active");
+        await Assert.That(created.Plan.Status).IsEqualTo("Active");
+        await Assert.That(created.Plan.WeekCount).IsEqualTo(8);
+        await Assert.That(created.Plan.SessionCount).IsGreaterThan(0);
+    }
+
+    [Test]
+    public async Task CreateQuickStartGoal_InvalidRange_ReturnsBadRequest()
+    {
+        var client = fixture.CreateHttpClient("apiservice");
+        await TestDataSeeder.EnsureAthleteProfileAsync(client, "Quick Start Validation Athlete");
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        var startDate = today.AddDays(7);
+
+        var response = await client.PostAsJsonAsync("/v1/goals/quick-start", new
+        {
+            goalType = "EventFinish",
+            discipline = (string?)null,
+            targetValue = (decimal?)null,
+            targetDate = startDate.AddDays(7 * 4).ToString("yyyy-MM-dd"),
+            planName = "Too Long",
+            startDate = startDate.ToString("yyyy-MM-dd"),
+            weekCount = 16,
+            activatePlan = false
+        });
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+    }
+}
+
 public static class TestDataSeeder
 {
     public static async Task EnsureAthleteProfileAsync(HttpClient client, string displayName)
@@ -470,3 +563,9 @@ public record PlanDetailResponse(List<PlanWeekDetailResponse> Weeks);
 public record PlanWeekDetailResponse(DateOnly WeekStartDate, List<PlanSessionDetailResponse> Sessions);
 public record PlanSessionDetailResponse(int PlannedDurationMinutes);
 public record RecentPlanSeedResult(Guid PlanId, List<DateOnly> WeekStarts, Dictionary<DateOnly, int> PlannedByWeek);
+public record RecommendationInsightsResponse(Guid? PlanId, int WeeksEvaluated, decimal OverallCompliancePercent, int CurrentStreakWeeks, NextPlannedSessionResponse? NextPlannedSession, List<RecommendationInsightResponse> Insights);
+public record RecommendationInsightResponse(string Code, string Title, string Message, string Severity, string Action);
+public record NextPlannedSessionResponse(DateOnly Date, string Discipline, string SessionType, int PlannedDurationMinutes);
+public record QuickStartGoalResponse(QuickStartGoalItemResponse Goal, QuickStartPlanItemResponse Plan);
+public record QuickStartGoalItemResponse(Guid Id, string Status);
+public record QuickStartPlanItemResponse(Guid Id, string Status, int WeekCount, int SessionCount);
