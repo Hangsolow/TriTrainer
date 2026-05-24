@@ -1,6 +1,6 @@
 # PROJECT_BRIEF.md - TriTrainer
 
-> Last updated: 2026-05-22 | Sprint 4 | Status: In Progress
+> Last updated: 2026-05-24 | Sprint 5 | Status: In Progress
 
 ## 1. Project Overview
 
@@ -92,7 +92,8 @@ Key product pillars:
 | 1 | Foundation Reboot | Done | Product reframing, architecture updates, redesigned UX baseline, domain and contract expansion, QA sign-off |
 | 2 | Plan and Goals Core | Done | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
 | 3 | Progress and PR Tracking | Done (Conditional Pass) | Personal records, progress analytics, compliance dashboards, CI pipeline wiring, Playwright smoke CI lane, expanded regression coverage |
-| 4 | Release Gate Hardening | In Progress | Close Sprint 3 carry-over CI/Playwright evidence gates, harden startup-health regression confidence, and tighten CI artifact triage quality |
+| 4 | Release Gate Hardening | Done | Closed carry-over CI/Playwright evidence gates under policy, hardened startup-health regression confidence, and completed QA PASS closeout |
+| 5 | CI Trust Remediation and Gate Operations | In Progress | Define hosted cert-trust remediation path, standardize local gate evidence, and operationalize repeatable integration/Playwright lane governance |
 
 ## 8. Current State (rewrite every sprint)
 
@@ -105,22 +106,22 @@ Key product pillars:
 - Sprint 2 complete: deterministic plan generation templates (EventFinish, Consistency, DisciplinePerformance), status-transition guards for goals and plans, terminal-goal rejection on plan creation, and string-enum JSON deserialization fix restoring Sprint 1 activity CRUD.
 - Plans and Weekly Progress pages include session pills, status badges, Activate button, variance column, compliance colouring, and zero-row filtering.
 - Sprint 3 complete with conditional QA pass: records filtering and personal-best API hardening, progress summary/streak analytics, Records page enhancements, and dashboard compliance widgets.
-- CI workflow implemented in `.github/workflows/ci.yml` with unit, integration, and Playwright jobs plus test artifact publication.
+- CI workflow policy is now GitHub unit-only in `.github/workflows/ci.yml`; integration and Playwright execution are local-only on trusted developer machines due cert trust constraints.
 - Regression coverage expanded and green: 203/203 passing (137 API, 12 integration, 27 web, 27 service-defaults); 0 failed, 0 skipped.
 - QA sign-off artifact produced in `docs/qa/sprint-3-signoff.md` with CONDITIONAL PASS and no blocker defects.
-- Sprint 4 has started with producer planning artifacts in `docs/sprint-4/plan.md`, `docs/sprint-4/progress.md`, and `docs/sprint-4/producer-kickoff.md`.
+- Sprint 4 is closed with PASS: local Playwright smoke rerun passed 20/20, local integration rerun passed 15/15, and waiver `S4-PLAYWRIGHT-STRICT-WAIVER-001` is closed.
+- Sprint 4 closeout artifacts are complete in `docs/sprint-4/progress.md`, `docs/sprint-4/done.md`, and `docs/qa/sprint-4-signoff.md`.
+- Sprint 5 is active with kickoff artifacts in `docs/sprint-5/plan.md`, `docs/sprint-5/progress.md`, and `docs/sprint-5/producer-kickoff.md`.
 
 **What does not work yet:**
-- First strict CI evidence capture is still required for merge-gate confirmation on Sprint 4 branch run history.
-- Playwright gate remains conditional under documented waiver policy until strict CI smoke evidence is published or waiver closure criteria are met.
-- Startup-health regression depth for cross-service readiness under Aspire orchestration needs explicit expansion and evidence capture.
+- Hosted GitHub runners still cannot run trusted integration/Playwright lanes against the current self-signed cert model.
 - No adaptive recommendation engine or automated plan optimization.
 - Security model and auth strategy not implemented.
 
 **What is next:**
-- Capture and attach first strict `feature/sprint-4` CI green run evidence in `docs/sprint-4/progress.md`.
-- Resolve Playwright strict evidence closure: publish strict pass evidence or approved waiver package with owner, expiry, and closure criteria.
-- Execute Sprint 4 hardening tasks for startup-health regression coverage and CI artifact triage quality.
+- Execute Sprint 5 Task 1-2 first: cert-trust remediation decision matrix and local evidence standardization.
+- Operationalize repeatable local integration/Playwright lane execution and artifact capture (Task 4).
+- Publish Sprint 5 QA governance package and merge recommendation after gate validation (Task 5).
 
 ## 9. Security Rules
 
@@ -166,7 +167,7 @@ Target deployment model:
 6. Run smoke tests against deployed endpoints.
 
 Immediate action item:
-- Create initial CI workflow for build + test + artifact publish in Sprint 2.
+- Run Sprint 5 producer checkpoint cadence and lock day-1 decisions in `docs/sprint-5/progress.md`.
 
 ## 12. Cross-Chat Handoff Protocol
 

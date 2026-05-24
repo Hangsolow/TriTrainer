@@ -12,7 +12,7 @@
 | 2 | Playwright strict evidence closure and waiver workflow | ✅ Completed (Policy Closed) | Playwright strict pass is no longer a GitHub gate; Playwright execution is local-only on trusted dev machines |
 | 3 | Aspire startup-health regression expansion | ✅ Completed | Integration coverage expanded with cross-service startup readiness + health endpoint checks; latest QA rerun passed 15/15 |
 | 4 | CI artifact quality and failure triage hardening | ✅ Completed | Unit lane artifact naming/manifests validated in GitHub; integration/playwright triage evidence moved to local execution logs |
-| 5 | Sprint 4 QA and merge readiness package | ✅ Completed (Conditional Pass) | QA sign-off published in `docs/qa/sprint-4-signoff.md` with gate-by-gate recommendation and open-blocker callouts |
+| 5 | Sprint 4 QA and merge readiness package | ✅ Completed (PASS) | QA sign-off published in `docs/qa/sprint-4-signoff.md`; waiver closed and all gates reconciled to PASS |
 
 ## Producer Checkpoint - 2026-05-24 (Policy Realignment)
 
