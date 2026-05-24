@@ -40,6 +40,7 @@ _None active. PR has been created and sprint is in review/handoff mode._
 - PR handoff package prepared in `docs/sprint-5/pr-handoff.md` for merge review.
 - PR from `feature/sprint-5` to `main` has been created.
 - Final QA rerun checkpoint completed: build PASS, Web tests PASS (34/34), Integration tests PASS (19/19).
+- Sprint 5 has been merged to `main` via regular merge commit `06b24290a8b6fc9c6cf9210c2f53f1c99b660a62`.
 
 ## Producer Checkpoint Template
 
@@ -71,10 +72,10 @@ Status: on-track
 - Gate 5: PASS - Major quick-start defect was fixed and retested to green.
 - Gate 6: PASS - Task 4 usability improvements landed and validation remains green.
 - Gate 7: PASS - Sprint 5 QA signoff artifact published with PASS recommendation.
-- Gate 8: PASS - Sprint closeout artifacts are complete and merge-ready.
+- Gate 8: PASS - Regular merge to `main` completed.
 
 ### Next 24h Focus
 
-1. QA: perform final exploratory pass on recommendation CTA navigation context before merge approval.
-2. Dev: address PR review comments and keep branch green until merge.
-3. Producer: complete final approval and merge to `main` using regular merge strategy.
+1. Producer: start Sprint 6 planning and create Sprint 6 kickoff artifacts.
+2. QA: run post-merge spot-check on recommendations, quick-start, and records happy paths on `main`.
+3. Dev: begin Sprint 6 branch setup after producer kickoff.

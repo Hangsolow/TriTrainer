@@ -122,9 +122,9 @@ Key product pillars:
 - Full authentication/authorization and production security model are not implemented.
 
 **What is next:**
-- Open and review PR for `feature/sprint-5` with Sprint 5 evidence package.
-- Merge Sprint 5 to `main` using regular merge after producer approval.
-- Plan next sprint scope (post-Sprint 5) for prioritized product value and any accepted follow-ups (for example CTA deep-linking context).
+- Confirm post-merge smoke confidence on `main` for recommendation, quick-start, and records flows.
+- Start Sprint 6 planning and kickoff artifacts based on updated backlog priorities.
+- Carry forward accepted follow-up items (for example recommendation CTA deep-linking context) into Sprint 6 prioritization.
 
 ## 9. Security Rules
 
