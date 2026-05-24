@@ -10,7 +10,7 @@
 |---|------|--------|-------|
 | 1 | Contextual recommendation navigation | ✅ Done | Recommendation CTAs now deep-link progress recommendations to plan/week context when available with safe fallback behavior |
 | 2 | Dashboard readability and hierarchy pass | ✅ Done | Reordered dashboard priority cards, added KPI summary strip, stat-list semantics, and hierarchy-focused section notes while preserving existing recommendation CTA routing behavior |
-| 3 | Records workflow speed pass | ⬜ Not started | |
+| 3 | Records workflow speed pass | ✅ Done | Records form now supports quick discipline/date presets, tab-aware discipline defaults, keyboard submit via form submit, and clearer action affordances while preserving existing record contracts |
 | 4 | Daily check-in quick path | ⬜ Not started | |
 | 5 | QA package and sprint handoff | 🔄 In progress | Automated QA checkpoint completed green; manual UX matrix and final sign-off artifact pending |
 
@@ -37,6 +37,7 @@ _None._
 - Any non-UX scope additions should be moved to `docs/ideas-backlog.md`.
 - Validation completed for Task 1: `dotnet build TriTrainer.slnx` succeeded; `TriTrainer.Web.Tests` passed (38/38); `TriTrainer.IntegrationTests` passed (19/19).
 - Validation completed for Task 2: `dotnet build TriTrainer.slnx` succeeded; `TriTrainer.Web.Tests` passed (41/41); `TriTrainer.IntegrationTests` passed (19/19); `TriTrainer.PlaywrightTests` passed (20/20).
+- Validation completed for Task 3: `dotnet build TriTrainer.slnx` succeeded; `TriTrainer.Web.Tests` passed (43/43); `TriTrainer.IntegrationTests` passed (19/19); `TriTrainer.PlaywrightTests` passed (20/20).
 - QA acceptance matrix initialized in `docs/qa/sprint-6-acceptance-matrix.md`.
 - 2026-05-24 QA gate unblock: Playwright smoke test `Smoke_Navigation_AllPrimaryRoutesReturnSuccess` was instrumented with per-route diagnostics (status, final URL, title, page/console error counts and first error). Failure was isolated to `/progress` returning HTTP 500. Applied minimal hardening in `WeeklyProgress.razor` initialization to catch startup API exceptions and surface an in-page error state instead of route crash. Re-run result: `TriTrainer.PlaywrightTests` passed 20/20. Blocker status: resolved (no owner/ETA needed).
 
@@ -57,9 +58,9 @@ Status: on-track
 
 - Task 1: Completed. Dashboard recommendation CTAs now deep-link progress-focused guidance to contextual `planId` and `weekStart` when available, with safe fallback routes.
 - Task 2: Completed and QA-cleared. Dashboard hierarchy/readability pass shipped with KPI strip, priority ordering, and semantic stat layout.
-- Task 3: Not started.
+- Task 3: Completed and QA-cleared. Records workflows now provide quick presets, tab-aware defaults, and faster keyboard-friendly entry paths.
 - Task 4: Not started.
-- Task 5: In progress. Automated QA checkpoint is green; manual UX matrix and final sign-off remain.
+- Task 5: In progress. Automated QA checkpoint remains green; manual UX matrix and final sign-off remain.
 
 ### New Risks
 
@@ -71,8 +72,8 @@ Status: on-track
 ### Merge Readiness
 
 - Gate 1: PASS - Sprint 6 scope and task ownership are defined and active.
-- Gate 2: PASS - Task 1 and Task 2 acceptance criteria implemented and validated.
-- Gate 3: PASS - Regression validation green (`build`, Web tests 41/41, Integration tests 19/19, Playwright tests 20/20).
+- Gate 2: PASS - Task 1, Task 2, and Task 3 acceptance criteria implemented and validated.
+- Gate 3: PASS - Regression validation green (`build`, Web tests 43/43, Integration tests 19/19, Playwright tests 20/20).
 - Gate 4: PASS - CI policy unchanged (GitHub unit-only lane remains baseline).
 - Gate 5: PASS - No blocker defects identified in the post-fix QA checkpoint.
 - Gate 6: HOLD - Sprint 6 QA sign-off artifact pending sprint completion.
@@ -81,6 +82,6 @@ Status: on-track
 
 ### Next 24h Focus
 
-1. Start Task 3 implementation: records workflow speed pass (Dev).
-2. Define and start Task 4 reduced-friction daily check-in path (Dev + Producer).
-3. Complete manual UX matrix items and draft sprint-6 sign-off recommendation (QA).
+1. Start Task 4 implementation: reduced-friction daily check-in path (Dev).
+2. Complete manual UX matrix items and capture evidence in the acceptance matrix (QA).
+3. Draft `docs/qa/sprint-6-signoff.md` and prep sprint closeout handoff after Task 4 validation (QA + Producer).

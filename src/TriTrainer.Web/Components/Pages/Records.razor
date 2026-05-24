@@ -18,35 +18,48 @@
 
 <section class="surface-card mb-4">
     <h2>Add Record</h2>
-    <div class="row g-2">
-        <div class="col-md-3">
-            <label class="form-label">Discipline</label>
-            <select class="form-select" @bind="discipline">
-                @foreach (var value in Enum.GetValues<ActivityType>())
-                {
-                    <option value="@value">@value</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Metric</label>
-            <select class="form-select" @bind="metric">
-                @foreach (var value in Enum.GetValues<PersonalRecordMetric>())
-                {
-                    <option value="@value">@value</option>
-                }
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Value</label>
-            <input class="form-control" type="number" step="0.01" @bind="recordValue" />
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Achieved On</label>
-            <input class="form-control" type="date" @bind="achievedOnDate" />
-        </div>
+    <div class="d-flex flex-wrap gap-2 mb-3" aria-label="Quick record setup">
+        <button class="btn btn-sm btn-outline-primary" type="button" @onclick="() => ApplyDisciplinePreset(ActivityType.Run)">Run preset</button>
+        <button class="btn btn-sm btn-outline-primary" type="button" @onclick="() => ApplyDisciplinePreset(ActivityType.Cycle)">Cycle preset</button>
+        <button class="btn btn-sm btn-outline-primary" type="button" @onclick="() => ApplyDisciplinePreset(ActivityType.Swim)">Swim preset</button>
+        @if (selectedTab.HasValue)
+        {
+            <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="ApplyFilterPreset">Use @selectedTab tab</button>
+        }
+        <button class="btn btn-sm btn-outline-secondary" type="button" @onclick='() => ApplyDatePreset("today")'>Today</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" @onclick='() => ApplyDatePreset("yesterday")'>Yesterday</button>
     </div>
-    <button class="btn btn-primary mt-3" @onclick="CreateRecord">Add Record</button>
+    <form @onsubmit="CreateRecordFromSubmit" @onsubmit:preventDefault="true">
+        <div class="row g-2">
+            <div class="col-md-3">
+                <label class="form-label" for="record-discipline">Discipline</label>
+                <select id="record-discipline" class="form-select" @bind="discipline" @bind:after="ApplyDisciplineDefaultMetric">
+                    @foreach (var value in Enum.GetValues<ActivityType>())
+                    {
+                        <option value="@value">@value</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="record-metric">Metric</label>
+                <select id="record-metric" class="form-select" @bind="metric">
+                    @foreach (var value in Enum.GetValues<PersonalRecordMetric>())
+                    {
+                        <option value="@value">@value</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="record-value">Value</label>
+                <input id="record-value" class="form-control" type="number" step="0.01" @bind="recordValue" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="record-date">Achieved On</label>
+                <input id="record-date" class="form-control" type="date" @bind="achievedOnDate" />
+            </div>
+        </div>
+        <button class="btn btn-primary mt-3" type="submit">Add Record</button>
+    </form>
     <p class="text-muted small mt-2 mb-0">Tip: use Reuse on any row below to prefill this form for a faster update.</p>
 </section>
 
@@ -152,7 +165,7 @@
                                 }
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ReuseRecord(record)">Reuse</button>
+                                <button class="btn btn-sm btn-outline-secondary" aria-label="Reuse @record.Discipline @record.Metric record" @onclick="() => ReuseRecord(record)">Reuse</button>
                             </td>
                         </tr>
                     }
@@ -306,7 +319,14 @@
         }
     }
 
-    private void SelectTab(ActivityType? tab) => selectedTab = tab;
+    private void SelectTab(ActivityType? tab)
+    {
+        selectedTab = tab;
+        if (tab.HasValue)
+        {
+            ApplyDisciplinePreset(tab.Value);
+        }
+    }
 
     private void ResetFilters()
     {
@@ -327,17 +347,41 @@
     private void StartFirstRecord()
     {
         discipline = selectedTab ?? ActivityType.Run;
-        metric = discipline switch
-        {
-            ActivityType.Run => PersonalRecordMetric.Fastest5k,
-            ActivityType.Cycle => PersonalRecordMetric.LongestRide,
-            ActivityType.Swim => PersonalRecordMetric.LongestSwim,
-            _ => PersonalRecordMetric.Fastest5k
-        };
+        metric = RecordsWorkflowHelpers.DefaultMetricForDiscipline(discipline);
 
         recordValue = 1;
         achievedOnDate = DateTime.Today;
         successMessage = "Form prefilled for a first record entry.";
+    }
+
+    private Task CreateRecordFromSubmit()
+    {
+        return CreateRecord();
+    }
+
+    private void ApplyDisciplineDefaultMetric()
+    {
+        metric = RecordsWorkflowHelpers.DefaultMetricForDiscipline(discipline);
+    }
+
+    private void ApplyDisciplinePreset(ActivityType presetDiscipline)
+    {
+        discipline = presetDiscipline;
+        metric = RecordsWorkflowHelpers.DefaultMetricForDiscipline(presetDiscipline);
+        successMessage = $"{presetDiscipline} defaults loaded. Add value and save.";
+    }
+
+    private void ApplyFilterPreset()
+    {
+        if (selectedTab.HasValue)
+        {
+            ApplyDisciplinePreset(selectedTab.Value);
+        }
+    }
+
+    private void ApplyDatePreset(string preset)
+    {
+        achievedOnDate = RecordsWorkflowHelpers.QuickDatePreset(preset, DateTime.Today);
     }
 
     private IEnumerable<PersonalRecord> SortedFilteredRecords()
