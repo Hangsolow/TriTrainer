@@ -5,9 +5,25 @@ namespace TriTrainer.IntegrationTests;
 
 public class AppFixture : AspireFixture<Projects.TriTrainer_AppHost>
 {
+    protected override TimeSpan ResourceTimeout => TimeSpan.FromSeconds(GetResourceTimeoutSeconds());
+
     static AppFixture()
     {
         Environment.SetEnvironmentVariable("TRITRAINER_DISABLE_PGADMIN", "true");
+    }
+
+    private static int GetResourceTimeoutSeconds()
+    {
+        const int defaultTimeoutSeconds = 60;
+
+        var raw = Environment.GetEnvironmentVariable("TRITRAINER_ASPIRE_STARTUP_TIMEOUT_SECONDS");
+
+        if (int.TryParse(raw, out var parsed) && parsed > 0)
+        {
+            return parsed;
+        }
+
+        return defaultTimeoutSeconds;
     }
 
     protected override void ConfigureBuilder(IDistributedApplicationTestingBuilder builder)

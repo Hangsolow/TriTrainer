@@ -142,6 +142,8 @@ jobs:
         run: docker info
 
       - name: Run IntegrationTests
+        env:
+          TRITRAINER_ASPIRE_STARTUP_TIMEOUT_SECONDS: 180
         run: >-
           dotnet run
           --project tests/TriTrainer.IntegrationTests/TriTrainer.IntegrationTests.csproj
