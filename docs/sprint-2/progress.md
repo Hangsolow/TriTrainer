@@ -75,3 +75,4 @@ None open. All dev-lane blockers resolved.
 - No blocker defects identified in dev lane.
 - All Tasks 1-5 complete. Handoff ready for QA lane and producer merge review.
 - Task 6 (Playwright) formal producer waiver approved 2026-05-15. Suite is implemented and compiles (19 smoke tests across 5 flows). Execution deferred to Sprint 3 CI pipeline setup. Waiver recorded in docs/sprint-2/progress.md and docs/qa/sprint-2-signoff.md.
+- 2026-05-15 SPRINT CLOSED: feature/sprint-2 merged to main via regular merge. All 8 gates passed. Sprint 2 is done.

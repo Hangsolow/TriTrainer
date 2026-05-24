@@ -55,3 +55,65 @@ Content-Type: application/json
 DELETE {{ApiService_HostAddress}}/activities/00000000-0000-0000-0000-000000000000
 
 ###
+
+### Upsert athlete profile (required for /v1 endpoints)
+PUT {{ApiService_HostAddress}}/v1/athlete-profile
+Content-Type: application/json
+
+{
+  "displayName": "Triathlete",
+  "weeklyHoursAvailable": 8,
+  "primaryEventDate": "2026-09-20"
+}
+
+###
+
+### Create personal record
+POST {{ApiService_HostAddress}}/v1/records
+Content-Type: application/json
+
+{
+  "discipline": "Run",
+  "metric": "Fastest5k",
+  "value": 24.5,
+  "achievedOn": "2026-05-20",
+  "sourceActivityId": null
+}
+
+###
+
+### List all personal records
+GET {{ApiService_HostAddress}}/v1/records
+Accept: application/json
+
+###
+
+### List records for one discipline
+GET {{ApiService_HostAddress}}/v1/records?discipline=Run
+Accept: application/json
+
+###
+
+### List personal-best records across disciplines
+GET {{ApiService_HostAddress}}/v1/records/personal-best
+Accept: application/json
+
+###
+
+### List personal-best record for a discipline
+GET {{ApiService_HostAddress}}/v1/records/personal-best?discipline=Run
+Accept: application/json
+
+###
+
+### Progress summary (default weeks=4)
+GET {{ApiService_HostAddress}}/v1/progress/summary
+Accept: application/json
+
+###
+
+### Progress summary (custom weeks)
+GET {{ApiService_HostAddress}}/v1/progress/summary?weeks=8
+Accept: application/json
+
+###

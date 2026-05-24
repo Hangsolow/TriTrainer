@@ -173,3 +173,110 @@ h1:focus {
 .tt-compliance-badge-ok   { background: #fff3cd; color: #856404; }
 .tt-compliance-badge-low  { background: #ffe0e5; color: #9e1d2e; }
 
+/* Sprint 3: records and dashboard widgets */
+.tt-discipline-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.tt-pr-card {
+    border: 1px solid var(--tt-border);
+    border-radius: 12px;
+    padding: 0.8rem;
+    background: #fff;
+}
+
+.tt-pr-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.45rem;
+}
+
+.tt-pr-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.tt-pr-note {
+    color: var(--tt-muted);
+    font-size: 0.84rem;
+}
+
+.tt-sparkline-label {
+    color: var(--tt-muted);
+    font-size: 0.8rem;
+}
+
+.tt-sparkline {
+    width: 100%;
+    height: 34px;
+    display: block;
+}
+
+.tt-sparkline polyline {
+    fill: none;
+    stroke: var(--tt-accent);
+    stroke-width: 2;
+}
+
+.tt-sort-btn {
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--tt-accent-strong);
+}
+
+.tt-pr-badge {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #065f46;
+    background: #d1fae5;
+}
+
+.tt-compliance-chart {
+    display: flex;
+    align-items: end;
+    gap: 0.5rem;
+    min-height: 120px;
+    padding-top: 0.5rem;
+}
+
+.tt-compliance-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: end;
+    gap: 0.3rem;
+}
+
+.tt-compliance-bar {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    min-height: 4px;
+}
+
+.tt-progress-high { background: #22c55e; }
+.tt-progress-mid  { background: #f59e0b; }
+.tt-progress-low  { background: #ef4444; }
+
+.tt-compliance-week {
+    font-size: 0.74rem;
+    color: var(--tt-muted);
+}
+
+.tt-streak-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+}
+
+.tt-streak-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+

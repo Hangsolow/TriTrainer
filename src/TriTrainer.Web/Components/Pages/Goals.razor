@@ -116,9 +116,19 @@
         {
             goals = await ApiClient.GetGoalsAsync();
         }
-        catch (Exception ex)
+        catch
         {
-            errorMessage = $"Failed to load goals: {ex.Message}";
+            // Absorb brief startup/readiness blips before surfacing an error.
+            try
+            {
+                await Task.Delay(250);
+                goals = await ApiClient.GetGoalsAsync();
+                errorMessage = null;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to load goals: {ex.Message}";
+            }
         }
         finally
         {

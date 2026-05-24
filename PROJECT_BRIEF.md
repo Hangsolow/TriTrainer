@@ -1,6 +1,6 @@
 # PROJECT_BRIEF.md - TriTrainer
 
-> Last updated: 2026-05-15 | Sprint 2 | Status: In Progress
+> Last updated: 2026-05-22 | Sprint 4 | Status: In Progress
 
 ## 1. Project Overview
 
@@ -91,7 +91,8 @@ Key product pillars:
 | 0 | PoC Baseline | Done | Existing calendar + activity CRUD proof of concept |
 | 1 | Foundation Reboot | Done | Product reframing, architecture updates, redesigned UX baseline, domain and contract expansion, QA sign-off |
 | 2 | Plan and Goals Core | Done | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
-| 3 | Progress and PR Tracking | Planned | Personal records, progress analytics, compliance dashboards, CI pipeline, Playwright smoke execution |
+| 3 | Progress and PR Tracking | Done (Conditional Pass) | Personal records, progress analytics, compliance dashboards, CI pipeline wiring, Playwright smoke CI lane, expanded regression coverage |
+| 4 | Release Gate Hardening | In Progress | Close Sprint 3 carry-over CI/Playwright evidence gates, harden startup-health regression confidence, and tighten CI artifact triage quality |
 
 ## 8. Current State (rewrite every sprint)
 
@@ -103,18 +104,23 @@ Key product pillars:
 - Existing activities flow remains available under `/calendar` as a support workflow.
 - Sprint 2 complete: deterministic plan generation templates (EventFinish, Consistency, DisciplinePerformance), status-transition guards for goals and plans, terminal-goal rejection on plan creation, and string-enum JSON deserialization fix restoring Sprint 1 activity CRUD.
 - Plans and Weekly Progress pages include session pills, status badges, Activate button, variance column, compliance colouring, and zero-row filtering.
-- 196 tests passing (137 API, 5 integration, 27 web, 27 service-defaults); 0 failed, 0 skipped.
-- Playwright smoke suite implemented (19 tests); execution deferred to Sprint 3 CI pipeline (formal waiver 2026-05-15).
+- Sprint 3 complete with conditional QA pass: records filtering and personal-best API hardening, progress summary/streak analytics, Records page enhancements, and dashboard compliance widgets.
+- CI workflow implemented in `.github/workflows/ci.yml` with unit, integration, and Playwright jobs plus test artifact publication.
+- Regression coverage expanded and green: 203/203 passing (137 API, 12 integration, 27 web, 27 service-defaults); 0 failed, 0 skipped.
+- QA sign-off artifact produced in `docs/qa/sprint-3-signoff.md` with CONDITIONAL PASS and no blocker defects.
+- Sprint 4 has started with producer planning artifacts in `docs/sprint-4/plan.md`, `docs/sprint-4/progress.md`, and `docs/sprint-4/producer-kickoff.md`.
 
 **What does not work yet:**
-- End-to-end UI automation not yet executed (Playwright suite compiled; needs CI/Docker runtime).
+- First strict CI evidence capture is still required for merge-gate confirmation on Sprint 4 branch run history.
+- Playwright gate remains conditional under documented waiver policy until strict CI smoke evidence is published or waiver closure criteria are met.
+- Startup-health regression depth for cross-service readiness under Aspire orchestration needs explicit expansion and evidence capture.
 - No adaptive recommendation engine or automated plan optimization.
 - Security model and auth strategy not implemented.
 
 **What is next:**
-- Sprint 3 — Progress and PR Tracking: personal records, progress analytics, compliance dashboards.
-- Stand up CI pipeline (GitHub Actions build + test + artifact publish) and execute Playwright smoke suite as first Sprint 3 task.
-- Address carried-forward minor issues: TUnit version skew (#2) and `TUnit0015` warnings (#3).
+- Capture and attach first strict `feature/sprint-4` CI green run evidence in `docs/sprint-4/progress.md`.
+- Resolve Playwright strict evidence closure: publish strict pass evidence or approved waiver package with owner, expiry, and closure criteria.
+- Execute Sprint 4 hardening tasks for startup-health regression coverage and CI artifact triage quality.
 
 ## 9. Security Rules
 

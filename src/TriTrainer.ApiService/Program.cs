@@ -532,6 +532,111 @@ v1.MapGet("/progress/weekly", async (Guid planId, DateOnly weekStart, Activities
 })
 .WithName("GetWeeklyProgress");
 
+v1.MapGet("/progress/summary", async (int? weeks, ActivitiesDbContext db) =>
+{
+    var weekCount = weeks ?? 4;
+    if (weekCount is < 1 or > 52)
+    {
+        return Results.BadRequest("weeks must be between 1 and 52.");
+    }
+
+    var athlete = await db.AthleteProfiles.AsNoTracking().FirstOrDefaultAsync();
+    if (athlete is null)
+    {
+        return Results.BadRequest("Athlete profile is required before querying progress summary.");
+    }
+
+    var plan = await db.TrainingPlans
+        .AsNoTracking()
+        .Include(p => p.Weeks)
+        .ThenInclude(w => w.Sessions)
+        .Where(p => p.AthleteId == athlete.Id && p.Status == PlanStatus.Active)
+        .OrderByDescending(p => p.CreatedAtUtc)
+        .FirstOrDefaultAsync();
+
+    if (plan is null)
+    {
+        return Results.NotFound("No active plan found.");
+    }
+
+    var today = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+    var daysSinceMonday = ((int)today.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+    var currentWeekStart = today.AddDays(-daysSinceMonday);
+    var mostRecentCompletedWeekStart = currentWeekStart.AddDays(-7);
+
+    var weekStarts = Enumerable.Range(0, weekCount)
+        .Select(offset => mostRecentCompletedWeekStart.AddDays(-(weekCount - 1 - offset) * 7))
+        .ToList();
+
+    var completedActivities = await db.Activities
+        .AsNoTracking()
+        .Where(a => a.Date >= weekStarts.First() && a.Date <= weekStarts.Last().AddDays(6))
+        .ToListAsync();
+
+    var weeksSummary = weekStarts
+        .Select(weekStartDate =>
+        {
+            var weekEndDate = weekStartDate.AddDays(6);
+            var matchingWeek = plan.Weeks.FirstOrDefault(w => w.WeekStartDate == weekStartDate);
+
+            var plannedMinutes = matchingWeek?.Sessions.Sum(s => s.PlannedDurationMinutes) ?? 0;
+            var completedMinutes = completedActivities
+                .Where(a => a.Date >= weekStartDate && a.Date <= weekEndDate)
+                .Sum(a => a.DurationMinutes);
+
+            var compliancePercent = plannedMinutes == 0
+                ? 0
+                : decimal.Round((decimal)completedMinutes / plannedMinutes * 100, 2);
+
+            return new WeeklyComplianceSummaryResponse(
+                weekStartDate,
+                plannedMinutes,
+                completedMinutes,
+                compliancePercent);
+        })
+        .ToList();
+
+    var totalPlannedMinutes = weeksSummary.Sum(w => w.PlannedMinutes);
+    var totalCompletedMinutes = weeksSummary.Sum(w => w.CompletedMinutes);
+    var overallCompliancePercent = totalPlannedMinutes == 0
+        ? 0
+        : decimal.Round((decimal)totalCompletedMinutes / totalPlannedMinutes * 100, 2);
+
+    var currentStreakWeeks = 0;
+    for (var i = weeksSummary.Count - 1; i >= 0; i--)
+    {
+        if (weeksSummary[i].CompliancePercent < 70)
+        {
+            break;
+        }
+
+        currentStreakWeeks++;
+    }
+
+    var longestStreakWeeks = 0;
+    var runningStreak = 0;
+    foreach (var weekSummary in weeksSummary)
+    {
+        if (weekSummary.CompliancePercent >= 70)
+        {
+            runningStreak++;
+            longestStreakWeeks = Math.Max(longestStreakWeeks, runningStreak);
+        }
+        else
+        {
+            runningStreak = 0;
+        }
+    }
+
+    return Results.Ok(new ProgressSummaryResponse(
+        plan.Id,
+        weeksSummary,
+        overallCompliancePercent,
+        currentStreakWeeks,
+        longestStreakWeeks));
+})
+.WithName("GetProgressSummary");
+
 v1.MapGet("/records", async (ActivityType? discipline, ActivitiesDbContext db) =>
 {
     var athlete = await db.AthleteProfiles.AsNoTracking().FirstOrDefaultAsync();
@@ -562,6 +667,46 @@ v1.MapGet("/records", async (ActivityType? discipline, ActivitiesDbContext db) =
 })
 .WithName("GetPersonalRecords");
 
+v1.MapGet("/records/personal-best", async (ActivityType? discipline, ActivitiesDbContext db) =>
+{
+    var athlete = await db.AthleteProfiles.AsNoTracking().FirstOrDefaultAsync();
+    if (athlete is null)
+    {
+        return Results.BadRequest("Athlete profile is required before querying records.");
+    }
+
+    var query = db.PersonalRecords.AsNoTracking().Where(r => r.AthleteId == athlete.Id);
+    if (discipline.HasValue)
+    {
+        query = query.Where(r => r.Discipline == discipline.Value);
+    }
+
+    var records = await query.ToListAsync();
+
+    var personalBests = records
+        .GroupBy(r => new { r.Discipline, r.Metric })
+        .Select(group =>
+        {
+            var lowerIsBetter = group.Key.Metric is PersonalRecordMetric.Fastest5k or PersonalRecordMetric.Fastest10k;
+            return lowerIsBetter
+                ? group.OrderBy(r => r.Value).ThenByDescending(r => r.AchievedOn).First()
+                : group.OrderByDescending(r => r.Value).ThenByDescending(r => r.AchievedOn).First();
+        })
+        .OrderBy(r => r.Discipline)
+        .ThenBy(r => r.Metric)
+        .ToList();
+
+    return Results.Ok(personalBests.Select(r => new PersonalRecordResponse(
+        r.Id,
+        r.AthleteId,
+        r.Discipline,
+        r.Metric,
+        r.Value,
+        r.AchievedOn,
+        r.SourceActivityId)));
+})
+.WithName("GetPersonalBestRecords");
+
 v1.MapPost("/records", async (CreatePersonalRecordRequest request, ActivitiesDbContext db) =>
 {
     var athlete = await db.AthleteProfiles.FirstOrDefaultAsync();
@@ -573,6 +718,21 @@ v1.MapPost("/records", async (CreatePersonalRecordRequest request, ActivitiesDbC
     if (request.Value <= 0)
     {
         return Results.BadRequest("Value must be greater than 0.");
+    }
+
+    if (!request.Discipline.HasValue)
+    {
+        return Results.BadRequest("Discipline is required.");
+    }
+
+    if (!Enum.IsDefined(request.Discipline.Value))
+    {
+        return Results.BadRequest("Discipline is invalid.");
+    }
+
+    if (!Enum.IsDefined(request.Metric))
+    {
+        return Results.BadRequest("Metric is invalid.");
     }
 
     if (request.SourceActivityId.HasValue)
@@ -587,7 +747,7 @@ v1.MapPost("/records", async (CreatePersonalRecordRequest request, ActivitiesDbC
     var record = new PersonalRecord
     {
         AthleteId = athlete.Id,
-        Discipline = request.Discipline,
+        Discipline = request.Discipline.Value,
         Metric = request.Metric,
         Value = request.Value,
         AchievedOn = request.AchievedOn,
@@ -618,7 +778,7 @@ record CreateGoalRequest(GoalType GoalType, ActivityType? Discipline, decimal? T
 record UpdateGoalStatusRequest(GoalStatus Status);
 record CreatePlanRequest(Guid GoalId, string Name, DateOnly StartDate, int WeekCount);
 record UpdatePlanStatusRequest(PlanStatus Status);
-record CreatePersonalRecordRequest(ActivityType Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
+record CreatePersonalRecordRequest(ActivityType? Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
 
 record AthleteProfileResponse(Guid Id, string DisplayName, decimal WeeklyHoursAvailable, DateOnly? PrimaryEventDate, DateTime CreatedAtUtc);
 record GoalResponse(Guid Id, Guid AthleteId, GoalType GoalType, ActivityType? Discipline, decimal? TargetValue, DateOnly TargetDate, GoalStatus Status, DateTime CreatedAtUtc);
@@ -626,4 +786,6 @@ record PlanDetailResponse(Guid Id, Guid AthleteId, Guid? GoalId, string Name, Da
 record PlanWeekResponse(Guid Id, Guid PlanId, int WeekIndex, DateOnly WeekStartDate, string? Notes, List<PlannedSessionResponse> Sessions);
 record PlannedSessionResponse(Guid Id, Guid PlanWeekId, ActivityType Discipline, SessionType SessionType, int PlannedDurationMinutes, decimal? PlannedDistanceKm, DayOfWeek DayOfWeek);
 record PersonalRecordResponse(Guid Id, Guid AthleteId, ActivityType Discipline, PersonalRecordMetric Metric, decimal Value, DateOnly AchievedOn, Guid? SourceActivityId);
+record WeeklyComplianceSummaryResponse(DateOnly WeekStartDate, int PlannedMinutes, int CompletedMinutes, decimal CompliancePercent);
+record ProgressSummaryResponse(Guid PlanId, List<WeeklyComplianceSummaryResponse> WeeksSummary, decimal OverallCompliancePercent, int CurrentStreakWeeks, int LongestStreakWeeks);
 
