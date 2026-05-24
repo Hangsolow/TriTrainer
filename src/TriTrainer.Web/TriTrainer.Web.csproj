@@ -10,4 +10,10 @@
     <ProjectReference Include="..\TriTrainer.ServiceDefaults\TriTrainer.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>TriTrainer.Web.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

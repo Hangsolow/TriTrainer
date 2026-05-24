@@ -11,6 +11,11 @@
     <div class="alert alert-danger">@errorMessage</div>
 }
 
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success">@successMessage</div>
+}
+
 <section class="surface-card mb-4">
     <h2>Add Record</h2>
     <div class="row g-2">
@@ -42,6 +47,7 @@
         </div>
     </div>
     <button class="btn btn-primary mt-3" @onclick="CreateRecord">Add Record</button>
+    <p class="text-muted small mt-2 mb-0">Tip: use Reuse on any row below to prefill this form for a faster update.</p>
 </section>
 
 <section class="surface-card">
@@ -66,7 +72,8 @@
     }
     else if (records.Count == 0)
     {
-        <p class="text-muted">No records yet.</p>
+        <p class="text-muted mb-2">No records yet. Add your first result to unlock discipline cards and trend views.</p>
+        <button class="btn btn-sm btn-outline-primary" @onclick="StartFirstRecord">Start with a sample setup</button>
     }
     else
     {
@@ -105,6 +112,11 @@
         <h3 class="h5">Record List</h3>
         var filteredRecords = SortedFilteredRecords().ToList();
 
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+            <p class="text-muted small mb-0">Showing <strong>@filteredRecords.Count</strong> record(s). Filter: <strong>@FilterLabel()</strong>. Sort: <strong>@SortSummary()</strong>.</p>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ResetFilters">Reset filters</button>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-sm align-middle">
                 <thead>
@@ -122,6 +134,7 @@
                             </button>
                         </th>
                         <th>Badge</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -138,12 +151,18 @@
                                     <span class="tt-pr-badge">New PR</span>
                                 }
                             </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => ReuseRecord(record)">Reuse</button>
+                            </td>
                         </tr>
                     }
                     @if (filteredRecords.Count == 0)
                     {
                         <tr>
-                            <td colspan="5" class="text-muted">No records in this discipline filter.</td>
+                            <td colspan="6" class="text-muted">
+                                No records in this discipline filter.
+                                <button class="btn btn-sm btn-link" @onclick="ResetFilters">Show all</button>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -155,6 +174,7 @@
 @code {
     private bool isLoading = true;
     private string? errorMessage;
+    private string? successMessage;
     private List<PersonalRecord> records = [];
     private List<PersonalRecord> personalBestRecords = [];
     private readonly HashSet<Guid> newRecordIds = [];
@@ -220,6 +240,7 @@
     private async Task CreateRecord()
     {
         errorMessage = null;
+        successMessage = null;
 
         var achievedOn = DateOnly.FromDateTime(achievedOnDate.Date);
 
@@ -242,6 +263,8 @@
             {
                 newRecordIds.Add(created.Id);
             }
+
+            successMessage = "Record added.";
 
             await LoadRecordsAsync();
         }
@@ -285,6 +308,38 @@
 
     private void SelectTab(ActivityType? tab) => selectedTab = tab;
 
+    private void ResetFilters()
+    {
+        selectedTab = null;
+        currentSort = SortField.Date;
+        sortAscending = false;
+    }
+
+    private void ReuseRecord(PersonalRecord record)
+    {
+        discipline = record.Discipline;
+        metric = record.Metric;
+        recordValue = record.Value;
+        achievedOnDate = record.AchievedOn.ToDateTime(TimeOnly.MinValue);
+        successMessage = "Record values copied to form. Adjust and save when ready.";
+    }
+
+    private void StartFirstRecord()
+    {
+        discipline = selectedTab ?? ActivityType.Run;
+        metric = discipline switch
+        {
+            ActivityType.Run => PersonalRecordMetric.Fastest5k,
+            ActivityType.Cycle => PersonalRecordMetric.LongestRide,
+            ActivityType.Swim => PersonalRecordMetric.LongestSwim,
+            _ => PersonalRecordMetric.Fastest5k
+        };
+
+        recordValue = 1;
+        achievedOnDate = DateTime.Today;
+        successMessage = "Form prefilled for a first record entry.";
+    }
+
     private IEnumerable<PersonalRecord> SortedFilteredRecords()
     {
         var filtered = selectedTab.HasValue
@@ -321,6 +376,16 @@
 
         return sortAscending ? "↑" : "↓";
     }
+
+    private string SortSummary() => (currentSort, sortAscending) switch
+    {
+        (SortField.Date, false) => "Newest first",
+        (SortField.Date, true) => "Oldest first",
+        (SortField.Value, false) => "Highest value first",
+        _ => "Lowest value first"
+    };
+
+    private string FilterLabel() => selectedTab?.ToString() ?? "All disciplines";
 
     private PersonalRecord? GetBestCard(ActivityType disciplineValue) =>
         personalBestRecords

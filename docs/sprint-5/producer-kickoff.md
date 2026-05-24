@@ -2,45 +2,44 @@
 
 Date: 2026-05-24
 Owner: Remy (Producer)
-Sprint: CI Trust Remediation and Gate Operations
+Sprint: Athlete Experience Expansion
 
 ## Sprint 5 Producer Brief
 
-Sprint 5 protects delivery confidence by resolving the root operational gap left after Sprint 4: hosted CI cannot currently validate integration and Playwright lanes due certificate trust constraints. This sprint defines the remediation path and operationalizes local lane evidence so merge governance remains objective and repeatable.
+Sprint 5 returns to product delivery. Sprint 4 closed release gates and stabilized governance; Sprint 5 focuses on athlete-visible value by shipping recommendation insights and smoother planning/records workflows.
 
 Sprint objective:
-- Define and approve cert-trust remediation strategy for hosted CI lane re-enablement (Task 1).
-- Standardize local lane evidence capture and naming for integration/Playwright (Task 2).
-- Harden merge-gate policy documentation and acceptance criteria (Task 3).
-- Operationalize local lane execution into repeatable scripts/checklists (Task 4).
-- Close sprint with QA governance package and producer merge recommendation (Task 5).
+- Ship recommendation insights API and dashboard UX (Tasks 1-2).
+- Reduce friction in goal-to-plan creation workflows (Task 3).
+- Improve records page daily usability (Task 4).
+- Close sprint with QA validation and producer handoff package (Task 5).
 
 Priority order:
-1. Strategy and policy first (Tasks 1-3).
-2. Operational repeatability second (Task 4).
+1. Backend recommendation contracts first (Task 1).
+2. Dashboard and workflow UX next (Tasks 2-4).
 3. QA and producer closeout last (Task 5).
 
 Out of scope:
-- Adaptive recommendation engine.
-- Auth / authorization implementation.
+- Hosted CI cert-trust remediation implementation.
+- Full auth / authorization rollout.
 - Coach mode / multi-athlete workflows.
 - Race simulation / taper planning.
-- Major UI redesign.
+- Large cross-app redesign.
 
 ## Day 1 Checklist
 
 1. Confirm task owners and backups:
-   - Task 1: Dash + Sage
-   - Task 2: Ivy + Dash
-   - Task 3: Remy + Ivy
-   - Task 4: Dash + Nova
+   - Task 1: Sage
+   - Task 2: Nova + Milo
+   - Task 3: Nova + Sage
+   - Task 4: Nova + Milo
    - Task 5: Ivy + Remy
 2. Freeze Sprint 5 scope to Tasks 1-5 only; move expansions to docs/ideas-backlog.md.
 3. Run 30-minute alignment:
-   - Dash: trust-remediation options and infrastructure risk.
-   - Sage: technical feasibility/security implications for cert strategy.
-   - Ivy: QA evidence acceptance and rerun reliability thresholds.
-   - Remy: merge gate definitions and sign-off format.
+   - Sage: recommendation contract shape and decision logic inputs.
+   - Nova + Milo: dashboard and records UX acceptance criteria.
+   - Ivy: QA acceptance matrix and regression focus for sprint features.
+   - Remy: merge gates and closeout artifact expectations.
 4. Record day-1 decisions in docs/sprint-5/progress.md.
 5. Require first producer checkpoint by end of day 1.
 
@@ -58,48 +57,48 @@ Read in order:
 3) docs/sprint-5/progress.md
 
 Tasks owned:
-- Task 1: Cert-trust remediation design.
-- Task 4 (with Nova): operational automation for local lanes.
+- Support feature delivery quality gates and keep CI policy stable while product tasks ship.
 
 Requirements:
-1) Produce decision matrix for hosted CI trust remediation options and select recommended path.
-2) Keep current policy intact during sprint (GitHub CI unit-only) unless producer explicitly approves policy change.
-3) Provide repeatable commands/checklists or scripts for local integration/Playwright runs with evidence output.
-4) Update docs/sprint-5/progress.md after each task with risks, owner, ETA, and gate impact.
+1) Keep GitHub CI unit lane healthy and non-disruptive to product sprint execution.
+2) Support dev/qa with reproducible test execution guidance when regressions appear.
+3) Update docs/sprint-5/progress.md only for risks/blockers impacting feature delivery.
 
 Definition of done:
-- Strategy recommendation documented and producer-reviewable.
-- Local lane operation artifacts are repeatable and traceable.
+- CI policy remains stable and feature lanes are unblocked operationally.
 ```
 
 ### @ai-team-dev
 
 ```text
 @ai-team-dev
-Sprint 5 support kickoff: implement minimal operational improvements that stabilize local gate execution.
+Sprint 5 feature kickoff: build recommendation and workflow UX improvements.
 
 Read in order:
 1) PROJECT_BRIEF.md (Sections 7, 8, 12, 13)
 2) docs/sprint-5/plan.md
 3) docs/sprint-5/progress.md
 
-Task owned:
-- Task 4 (with Dash): operational automation for local lanes.
+Tasks owned:
+- Task 1: recommendation insights API MVP.
+- Task 2: dashboard recommendation widgets.
+- Task 3: goal/plan quick-start improvements.
+- Task 4: records usability improvements.
 
 Requirements:
-1) Keep scope minimal and operational; no broad feature changes.
-2) Ensure any helper scripts/checklists match existing test conventions.
-3) Record what changed and why in sprint progress.
+1) Keep scope to sprint-defined feature improvements; avoid infra policy work.
+2) Ship backend contracts before frontend wiring where dependencies exist.
+3) Record acceptance evidence and edge-case handling in sprint progress.
 
 Definition of done:
-- Local lane execution is easier to run and produces predictable evidence artifacts.
+- Tasks 1-4 feature outcomes are implemented and regression-safe.
 ```
 
 ### @ai-team-qa
 
 ```text
 @ai-team-qa
-Sprint 5 QA kickoff: governance and evidence standardization validation.
+Sprint 5 QA kickoff: feature validation and sprint sign-off.
 
 Read in order:
 1) PROJECT_BRIEF.md (Sections 8, 12, 13)
@@ -107,16 +106,16 @@ Read in order:
 3) docs/sprint-5/progress.md
 
 Tasks owned:
-- Task 2: Local gate evidence standardization.
-- Task 5: QA governance package and sign-off.
+- Task 5: QA package and sign-off.
+- Support verification for Tasks 1-4 feature behavior and regression safety.
 
 Requirements:
-1) Validate evidence schema for local integration and Playwright lanes.
-2) Confirm reproducibility of evidence collection steps.
+1) Validate recommendation, dashboard, goal/plan, and records feature acceptance criteria.
+2) Confirm no blocker regressions in core planning/progress flows.
 3) Publish sign-off in docs/qa/sprint-5-signoff.md with clear blocker status.
 
 Exit criteria:
-- Evidence package is complete and audit-ready.
+- Feature acceptance package is complete and reproducible.
 - PASS or CONDITIONAL PASS issued with explicit rationale.
 ```
 
@@ -149,21 +148,21 @@ Checkpoint output format:
 
 ## Risks and Mitigations
 
-1. Hosted cert-trust remediation option is selected but not operationally viable.
-   - Mitigation: Dash + Sage include validation criteria and rollback plan in the decision matrix.
+1. Recommendation logic may be too generic to provide athlete value.
+   - Mitigation: Sage defines concrete recommendation rules tied to measurable plan/progress signals.
 
-2. Local evidence format diverges across machines and weakens audit quality.
-   - Mitigation: Ivy defines mandatory evidence schema and acceptance checklist.
+2. UI scope may expand and delay sprint closure.
+   - Mitigation: Nova + Milo lock acceptance criteria for dashboard and records before implementation.
 
-3. Scope creep reintroduces product work into an operations sprint.
-   - Mitigation: Remy enforces out-of-scope policy and redirects to docs/ideas-backlog.md.
+3. Feature changes may regress existing planning/progress flows.
+   - Mitigation: Ivy validates focused regression paths and escalates blockers immediately.
 
 ## Merge Gates
 
 1. Task completion gate: Tasks 1-5 complete or explicitly deferred with producer approval.
-2. CI evidence gate: GitHub unit-only CI evidence remains green and traceable.
-3. Local execution gate: integration and Playwright local evidence is captured in standardized format.
-4. Policy gate: merge-gate policy language is consistent across sprint docs and QA sign-off.
+2. Feature acceptance gate: recommendation/dashboard/goal-plan/records improvements meet documented acceptance criteria.
+3. Regression gate: core planning, progress, and records flows remain functional.
+4. CI gate: GitHub unit-only CI lane remains green.
 5. Defect gate: zero open severity:blocker issues; severity:major requires explicit producer + QA acceptance.
 6. QA sign-off gate: docs/qa/sprint-5-signoff.md exists with PASS or CONDITIONAL PASS.
 7. Documentation gate: PROJECT_BRIEF.md section 8 updated, docs/sprint-5/progress.md current, docs/sprint-5/done.md present.

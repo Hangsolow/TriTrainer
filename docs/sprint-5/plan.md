@@ -1,52 +1,52 @@
-# Sprint 5 - CI Trust Remediation and Gate Operations
+# Sprint 5 - Athlete Experience Expansion
 
-> Sprint Goal: Build a sustainable trust and evidence model so integration and Playwright quality gates remain reliable, auditable, and ready for future hosted CI re-enablement.
+> Sprint Goal: Ship visible athlete-facing product value by adding recommendation insights, faster goal/planning flows, and stronger daily usability in dashboard and records workflows.
 > Branch: feature/sprint-5
-> Estimated effort: 1 week
+> Estimated effort: 1-1.5 weeks
 
 ## Prioritized Task List
 
 | # | Task | Owner | Est | Description |
 |---|------|-------|-----|-------------|
-| 1 | Cert-trust remediation design | Dash + Sage | 4h | Define options to re-enable hosted integration/Playwright safely (custom CA trust, self-hosted runner, tunnel/domain strategy), with recommendation and decision matrix |
-| 2 | Local gate evidence standardization | Ivy + Dash | 4h | Standardize local integration/Playwright execution evidence format (commands, TRX naming, environment metadata, retention path) |
-| 3 | Gate policy hardening docs | Remy + Ivy | 3h | Align merge gate language across sprint artifacts and establish explicit pass/fail rules for unit-hosted vs local lanes |
-| 4 | Operational automation for local lanes | Dash + Nova | 5h | Add minimal scripts/checklists to run integration + Playwright locally and produce repeatable evidence artifacts |
-| 5 | QA governance package and handoff | Ivy + Remy | 3h | Publish Sprint 5 QA sign-off package and merge recommendation with risk register updates |
+| 1 | Recommendation insights API MVP | Sage | 6h | Add backend recommendation endpoint(s) driven by recent compliance/streak/plan signals for actionable athlete guidance |
+| 2 | Dashboard recommendation widgets | Nova + Milo | 6h | Add recommendation cards and CTA flows on dashboard using new API contracts |
+| 3 | Goal and plan quick-start improvements | Nova + Sage | 5h | Improve goal-to-plan creation flow with reduced friction, clearer defaults, and stronger validation feedback |
+| 4 | Records usability improvements | Nova + Milo | 4h | Improve records interaction quality (sorting/filter clarity, empty states, and quick actions) |
+| 5 | QA package and sprint handoff | Ivy + Remy | 4h | Publish Sprint 5 QA sign-off and complete done/progress/brief handoff artifacts |
 
 ## Work Schedule
 
-### Phase 1: Trust and Policy Baseline (Tasks 1-2)
-- Lock trust-remediation recommendation and evidence schema first.
-- Keep execution constrained to reliability/governance outcomes.
+### Phase 1: Backend and Contracts (Tasks 1-2)
+- Land recommendation contracts first, then wire dashboard feature UX.
+- Keep changes scoped to sprint feature outcomes.
 - Checkpoint commit after phase.
 
-### Phase 2: Operational Hardening (Tasks 3-4)
-- Make lane rules and local evidence capture repeatable.
-- Avoid feature-surface expansion.
+### Phase 2: Workflow UX Improvements (Tasks 3-4)
+- Improve goal/plan and records flows for daily use.
+- Avoid infra/policy scope drift.
 - Checkpoint commit after phase.
 
 ### Phase 3: QA and Producer Closeout (Task 5)
-- Validate gates with explicit pass/fail state.
+- Validate product behavior and regression safety.
 - Publish sign-off and closeout package.
 
 ## Success Criteria
 
-- [ ] Cert-trust remediation options are documented with one approved implementation path.
-- [ ] Local integration and Playwright evidence format is standardized and used consistently.
-- [ ] Merge gate policy clearly distinguishes hosted CI unit lane from local-only lanes.
-- [ ] Local lane execution is operationalized with repeatable commands/checklists.
+- [ ] Recommendation API returns actionable guidance from athlete progress signals.
+- [ ] Dashboard shows recommendation widgets with clear athlete actions.
+- [ ] Goal-to-plan quick-start flow is faster and less error-prone.
+- [ ] Records page usability improvements are shipped and validated.
 - [ ] QA sign-off artifact exists with PASS or CONDITIONAL PASS and explicit blocker status.
 
 ## What is NOT in This Sprint
 
 | Feature | Reason |
 |---------|--------|
-| Adaptive recommendation engine | Product feature scope outside CI/gate operations objective |
-| Auth / authorization implementation | Separate security sprint required |
+| Hosted CI cert-trust remediation | Deferred to dedicated ops/infra sprint |
+| Full auth/authorization rollout | Separate security sprint required |
 | Coach mode / multi-athlete workflows | Product expansion outside current sprint objective |
-| Race simulation / taper planning | Backlog item unrelated to gate operations |
-| Major UI redesign | Not required for CI trust and governance hardening |
+| Race simulation / taper planning | Backlog item for later planning sprint |
+| Large cross-app redesign | Keep scope focused on high-impact incremental UX |
 
 ## Agent Prompt
 

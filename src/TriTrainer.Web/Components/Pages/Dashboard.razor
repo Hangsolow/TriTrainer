@@ -121,6 +121,40 @@ else
         </section>
 
         <section class="surface-card">
+            <h2>Recommendations</h2>
+            @if (recommendationInsights is null)
+            {
+                <p class="text-muted">No recommendation insights available yet.</p>
+            }
+            else
+            {
+                var insights = DashboardRecommendationHelpers.InsightsOrEmpty(recommendationInsights);
+                @if (insights.Count == 0)
+                {
+                    <p class="text-muted">You are on track. Check back after your next workout.</p>
+                }
+                else
+                {
+                    <p class="mb-2 text-muted">Based on your latest @recommendationInsights.WeeksEvaluated-week trend.</p>
+                    <div class="tt-reco-list">
+                        @foreach (var insight in insights)
+                        {
+                            <article class="tt-reco-card">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <h3 class="tt-reco-title mb-1">@insight.Title</h3>
+                                    <span class="tt-severity-badge @DashboardRecommendationHelpers.SeverityBadgeClass(insight.Severity)">@DashboardRecommendationHelpers.SeverityLabel(insight.Severity)</span>
+                                </div>
+                                <p class="mb-1">@insight.Message</p>
+                                <p class="tt-reco-action mb-2"><strong>Action:</strong> @insight.Action</p>
+                                <a class="btn btn-sm btn-outline-primary" href="@DashboardRecommendationHelpers.RecommendationHref(insight.Code)">@DashboardRecommendationHelpers.RecommendationCtaLabel(insight.Code)</a>
+                            </article>
+                        }
+                    </div>
+                }
+            }
+        </section>
+
+        <section class="surface-card">
             <h2>Next Planned Session</h2>
             @if (nextSession is null)
             {
@@ -145,6 +179,7 @@ else
     private PlanSummary? currentPlan;
     private WeeklyProgressResponse? weeklyProgress;
     private ProgressSummaryResponse? progressSummary;
+    private RecommendationInsightsResponse? recommendationInsights;
     private NextSessionViewModel? nextSession;
 
     protected override async Task OnInitializedAsync()
@@ -173,6 +208,8 @@ else
                 var planDetail = await ApiClient.GetPlanAsync(currentPlan.Id);
                 nextSession = BuildNextSession(planDetail);
             }
+
+            recommendationInsights = await ApiClient.GetRecommendationInsightsAsync(4);
         }
         catch (Exception ex)
         {
