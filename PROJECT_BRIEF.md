@@ -1,6 +1,6 @@
 # PROJECT_BRIEF.md - TriTrainer
 
-> Last updated: 2026-05-24 | Sprint 5 | Status: Done (Ready to Merge)
+> Last updated: 2026-05-24 | Sprint 6 | Status: In Progress
 
 ## 1. Project Overview
 
@@ -93,7 +93,8 @@ Key product pillars:
 | 2 | Plan and Goals Core | Done | Training plan and goals hardening, richer session generation, contract validation, and E2E smoke coverage |
 | 3 | Progress and PR Tracking | Done (Conditional Pass) | Personal records, progress analytics, compliance dashboards, CI pipeline wiring, Playwright smoke CI lane, expanded regression coverage |
 | 4 | Release Gate Hardening | Done | Closed carry-over CI/Playwright evidence gates under policy, hardened startup-health regression confidence, and completed QA PASS closeout |
-| 5 | Athlete Experience Expansion | Done (Ready to Merge) | Delivered recommendation insights, dashboard guidance, quick-start planning flow, and records usability improvements with QA PASS sign-off |
+| 5 | Athlete Experience Expansion | Done | Delivered recommendation insights, dashboard guidance, quick-start planning flow, and records usability improvements with QA PASS sign-off |
+| 6 | Guidance Precision and Daily Flow | In Progress | Deep-link recommendation actions to context, add readiness visibility, improve quick logging, and calibrate guidance behavior |
 
 ## 8. Current State (rewrite every sprint)
 
@@ -115,6 +116,7 @@ Key product pillars:
     - `TriTrainer.Web.Tests` 34/34 pass.
     - `TriTrainer.IntegrationTests` 19/19 pass.
 - Sprint 5 QA sign-off artifact exists at `docs/qa/sprint-5-signoff.md` with PASS recommendation.
+- Sprint 5 is merged to `main` via regular merge workflow.
 
 **What does not work yet:**
 - Hosted GitHub runners still cannot reliably execute trusted integration/Playwright lanes under current self-signed certificate trust constraints.
@@ -122,9 +124,9 @@ Key product pillars:
 - Full authentication/authorization and production security model are not implemented.
 
 **What is next:**
-- Confirm post-merge smoke confidence on `main` for recommendation, quick-start, and records flows.
-- Start Sprint 6 planning and kickoff artifacts based on updated backlog priorities.
-- Carry forward accepted follow-up items (for example recommendation CTA deep-linking context) into Sprint 6 prioritization.
+- Execute Sprint 6 Task 1 and Task 4 first: recommendation CTA deep-linking and guidance contract calibration.
+- Deliver Sprint 6 daily-flow UX improvements (readiness card MVP and quick log flow).
+- Publish Sprint 6 QA package and closeout artifacts after feature acceptance and regression validation.
 
 ## 9. Security Rules
 
