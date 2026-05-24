@@ -151,3 +151,9 @@ The Web frontend's only page is `Calendar.razor` (routes `/` and `/calendar`):
 - `TriTrainer.AppHost` → No direct service projects (uses project type detection)
 - `TriTrainer.ApiService.Tests` → `TriTrainer.ApiService` (unit tests with EF InMemory)
 - `TriTrainer.IntegrationTests` → `TriTrainer.AppHost` (full Aspire stack tests via TUnit.Aspire)
+
+## Sprint Execution Persistence
+
+- When operating in sprint coordination mode, always continue executing the current "Next 24h Focus" items without waiting for repeated user nudges.
+- After each lane completes, immediately refresh `docs/sprint-N/progress.md` and generate the next "Next 24h Focus" list, then continue with the next actionable owner.
+- Continue this execution loop until the sprint is ready for review/merge (all required merge gates pass and QA sign-off status is merge-ready), unless explicitly blocked or the user instructs to pause/redirect.

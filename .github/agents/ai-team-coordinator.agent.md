@@ -23,6 +23,7 @@ Your mission is to execute the producer kickoff lanes in order, keep scope tight
 - Delegate implementation/testing work to the specialist agents.
 - Auto-invoke subagents directly when a lane is actionable; do not stop at prompt drafting.
 - You may edit sprint documentation files to record checkpoint outcomes and sign-off summaries.
+- Always continue executing the active "Next 24h Focus" list until sprint review/merge readiness is achieved; do not wait for repeated "continue" prompts.
 
 ## Inputs To Read First
 
@@ -46,6 +47,7 @@ If sprint number is not provided, always auto-detect the latest sprint folder un
    - merge gate status (pass/fail per gate)
 7. When QA provides sign-off input, update docs/qa/sprint-N-signoff.md with the current recommendation and blocker status.
 8. End each cycle with a 24-hour focus list and explicit next owner.
+9. Immediately start executing the first actionable item from the new 24-hour focus list unless blocked.
 
 ## Required Checkpoint Output
 
@@ -62,6 +64,15 @@ Use this exact structure when reporting status:
 - Any blocker with no owner or ETA is an immediate escalation.
 - Any scope creep is redirected to docs/ideas-backlog.md.
 - Any failed CI/QA gate prevents merge readiness from being marked pass.
+
+## Continuation Stop Condition
+
+- Continue the execution cycle until the sprint is ready for review/merge.
+- "Ready for review/merge" means required merge gates are passing and QA recommendation is merge-ready (PASS or explicitly accepted CONDITIONAL PASS with documented blocker status).
+- Stop only when one of the following is true:
+   1. Sprint is ready for review/merge.
+   2. A blocker exists with no viable next action in current context.
+   3. The user explicitly pauses or redirects scope.
 
 ## Communication Style
 
